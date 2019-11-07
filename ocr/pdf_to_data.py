@@ -15,6 +15,7 @@ def image_convert(pdf_path, output_name):
     pages = pdf2image.convert_from_path(pdf_path)
     for i, page in enumerate(pages):
         file_name = '{}.{}.jpg'.format(output_name, i)
+        print('Saving', file_name)
         page.save(file_name, 'JPEG')
 
 def extract_text_by_page(pdf_path):
@@ -37,6 +38,7 @@ def extract_text(pdf_path, output_name):
     """
     for i, page in enumerate(extract_text_by_page(pdf_path)):
         file_name = '{}.{}.txt'.format(output_name, i)
+        print('Writing', file_name)
         with open(file_name, 'w') as f:
             f.write(page)
 
