@@ -4,9 +4,9 @@ Note: ssml must be well-formed according to:
     https://www.w3.org/TR/speech-synthesis/
 """
 from google.cloud import texttospeech
-from google.cloud import translate
 
 ##Hardcoded list for supported list"
+'''
 VOICE={
   "en-US": {
      "f" : {
@@ -30,11 +30,7 @@ def voiceOutput(pitchInput, genderInput, textInput):#, filename):
         for i in range (len(textInput)):
             # Instantiates a client
             client = texttospeech.TextToSpeechClient()
-            lang = detectLanguage(textInput[i])
-
-            # Hardcode to skip non enlglish
-            if lang != 'en':
-                continue
+            lang = 'en' #detectLanguage(textInput[i])
             lang = matchCountryCode(lang)
 
             synthesis_input = texttospeech.types.SynthesisInput(text=textInput[i])
@@ -79,11 +75,6 @@ def voiceOutput(pitchInput, genderInput, textInput):#, filename):
 
     #print("Audio content written to file " + filename)
 
-def detectLanguage(text):
-    translate_client = translate.Client()
-    result = translate_client.detect_language(text)
-    res = format(result['language'])
-    return res
 
 def matchCountryCode(lang):
     if lang in ["nl", "en", "fr", "de", "it", "ja", "ko", "es", "pt", "sv", "tr"]:
@@ -104,3 +95,38 @@ def matchCountryCode(lang):
 def returnVoiceName(lang, gender, voiceType):
     ##Currently by default return the first one available.
     return lang + "-" + voiceType + "-" + VOICE[lang][gender][voiceType][0]
+
+'''
+
+
+def main():
+    print('API speech synthesis')
+    # TODO(susung): the output of sentiment analysis will be a float between 0-1 (0 being very negative, 1 being positive)
+    # How do we map that to this text to speech API?
+    from google.cloud import texttospeech
+    client = texttospeech.TextToSpeechClient()
+
+    text = 'hello world'
+    input_text = texttospeech.types.SynthesisInput(text=text)
+
+    # Note: the voice can also be specified by name.
+    # Names of voices can be retrieved with client.list_voices().
+    print(client.list_voices())
+    voice = texttospeech.types.VoiceSelectionParams(
+        language_code='en-US',
+        ssml_gender=texttospeech.enums.SsmlVoiceGender.FEMALE)
+
+    audio_config = texttospeech.types.AudioConfig(
+        audio_encoding=texttospeech.enums.AudioEncoding.MP3)
+
+    response = client.synthesize_speech(input_text, voice, audio_config)
+    print(response)
+    return
+
+    # The response's audio_content is binary.
+    with open('output.mp3', 'wb') as out:
+        out.write(response.audio_content)
+        print('Audio content written to file "output.mp3"')
+
+if __name__ == '__main__':
+    main()
