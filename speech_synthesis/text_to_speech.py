@@ -3,7 +3,9 @@
 Note: ssml must be well-formed according to:
     https://www.w3.org/TR/speech-synthesis/
 """
-from google.cloud import texttospeech
+import datetime
+
+from google.cloud import texttospeech as tts
 
 ##Hardcoded list for supported list"
 '''
@@ -98,35 +100,33 @@ def returnVoiceName(lang, gender, voiceType):
 
 '''
 
+def synthesize_speech(text, sentiment, gender='F'):
+    """
+    text: str           The text to be spoken.
+    sentiment: float    A float between 0 and 1 indicating how negative or positive the text is.
+    """
+    now = str(datetime.datetime.today().strftime('%Y-%m-%d-%H-%M-%S'))
+    client = tts.TextToSpeechClient()
 
-def main():
-    print('API speech synthesis')
-    # TODO(susung): the output of sentiment analysis will be a float between 0-1 (0 being very negative, 1 being positive)
-    # How do we map that to this text to speech API?
-    from google.cloud import texttospeech
-    client = texttospeech.TextToSpeechClient()
-
-    text = 'hello world'
-    input_text = texttospeech.types.SynthesisInput(text=text)
+    input_text = tts.types.SynthesisInput(text=text)
 
     # Note: the voice can also be specified by name.
     # Names of voices can be retrieved with client.list_voices().
-    print(client.list_voices())
-    voice = texttospeech.types.VoiceSelectionParams(
+    # print(client.list_voices())
+    voice = tts.types.VoiceSelectionParams(
         language_code='en-US',
-        ssml_gender=texttospeech.enums.SsmlVoiceGender.FEMALE)
+        ssml_gender=tts.enums.SsmlVoiceGender.FEMALE if gender == 'F' else tts.enums.SsmlVoiceGender.Male)
 
-    audio_config = texttospeech.types.AudioConfig(
-        audio_encoding=texttospeech.enums.AudioEncoding.MP3)
-
+    audio_config = tts.types.AudioConfig(audio_encoding=tts.enums.AudioEncoding.MP3)
+    # Synthesize speech and write to output file.
     response = client.synthesize_speech(input_text, voice, audio_config)
-    print(response)
-    return
-
     # The response's audio_content is binary.
-    with open('output.mp3', 'wb') as out:
-        out.write(response.audio_content)
-        print('Audio content written to file "output.mp3"')
+    with open(f'outputs/{now}.mp3', 'wb') as mp3:
+        mp3.write(response.audio_content)
+    with open(f'outputs/{now}.meta', 'w') as metadata:
+        metadata.writelines(['Text: ', text, '\nSentiment: ', str(sentiment)])
+    print(f'Data saved to outputs/{now}')
 
 if __name__ == '__main__':
-    main()
+    # export GOOGLE_APPLICATION_CREDENTIALS=~/.google_cloud_auth.json
+    synthesize_speech('hello world', 0.5)
