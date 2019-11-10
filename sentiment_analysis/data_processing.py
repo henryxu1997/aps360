@@ -22,10 +22,25 @@ def convert_words_to_embeddings(words):
         x[i] = glove[word]
     return x
 
-def load_sst_dataset():
-    # TODO(ivan)
-    sst = torchtext.datasets.SST()
-    print(sst)
+def load_sst_dataset(batch_size=32, device='cpu', root='.data'):
+    """
+    Creates BucketIterators for train, validation, and test sets from SST.
+    Set device='cuda' to use GPU.
+    """
+
+    text_field = torchtext.data.Field(
+        sequential=True, batch_first=True, include_lengths=True)
+    label_field = torchtext.data.Field(
+        sequential=False, batch_first=True)
+
+    train, val, test = torchtext.datasets.SST.splits(
+        text_field, label_field, root=root, fine_grained=True)
+
+    text_field.build_vocab(train, vectors=glove)
+    label_field.build_vocab(train)
+
+    return torchtext.data.BucketIterator.splits(
+        (train, val, test), batch_size=batch_size, device=device)
 
 
 if __name__ == '__main__':
