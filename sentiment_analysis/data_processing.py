@@ -80,7 +80,7 @@ def load_sst_dataset(root='.data'):
 
     return train_data, valid_data, test_data, text_field.vocab
 
-def create_iter(dataset, batch_size=32, device='cpu'):
+def create_iter(dataset, batch_size, device='cpu'):
     """
     Creates BucketIterator for given SST dataset.
     Set device='cuda' to use GPU.
@@ -97,7 +97,7 @@ def create_iter(dataset, batch_size=32, device='cpu'):
 def sst_analysis():
     train_set, valid_set, test_set, vocab = load_sst_dataset()
     print('Sample of vocab:', vocab.itos[:10])
-    train_iter = create_iter(train_set)
+    train_iter = create_iter(train_set, batch_size=32)
     for batch in train_iter:
         print(batch.label)
         data, lengths = batch.text
