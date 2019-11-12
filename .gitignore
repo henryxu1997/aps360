@@ -1,3 +1,6 @@
 venv/
 __pycache__
+.data
 .vector_cache/
+.DS_Store
+outputs

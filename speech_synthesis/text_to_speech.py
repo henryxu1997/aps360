@@ -1,0 +1,94 @@
+"""Synthesizes speech from the input string of text or ssml.
+
+Note: ssml must be well-formed according to:
+    https://www.w3.org/TR/speech-synthesis/
+"""
+import datetime
+
+from google.cloud import texttospeech as tts
+
+# Info for supported voices: https://cloud.google.com/text-to-speech/docs/voices
+VOICE_INFO = {
+  "en-US": {
+     "f" : {
+        "Standard": ["C", "E"],
+        "Wavenet": ["C", "E", "F"]
+     },
+     "m" : {
+        "Standard": ["B", "D"],
+        "Wavenet": ["A", "B", "D"]
+     }
+  },
+  'en-GB': {
+      'f': {
+          'Standard': ['A', 'C'],
+          'Wavenet': ['A', 'C'],
+      },
+      'm': {
+          'Standard': ['B', 'D'],
+          'Wavenet': ['B', 'D'],
+      }
+  }
+}
+
+def generate_voice_name(lang, gender, voice_type):
+    return lang + "-" + voice_type + "-" + VOICE_INFO[lang][gender][voice_type][0]
+
+def generate_ssml(text, sentiment):
+    """
+    Generate an SSML XML based for a specific text and sentiment
+    Generally, happier will be higher pitched and faster.
+    Reference: https://www.w3.org/TR/speech-synthesis11/#edef_prosody
+    """
+    if sentiment > 0.8:
+        # Very positive
+        attributes = 'rate="130%" volume="loud" pitch="+3st"'
+    elif sentiment > 0.6:
+        # positive
+        attributes = 'rate="110%" pitch="+2st"'
+    elif sentiment > 0.4:
+        # neutral
+        attributes = ''
+    elif sentiment > 0.2:
+        # negative
+        attributes = 'rate="120%" pitch="-3st"'
+    else:
+        # very negative
+        attributes = 'rate="130%" volume="x-loud" pitch="-6st"'
+    return f'<speak><prosody {attributes}>{text}</prosody></speak>'
+
+def synthesize_speech(text, sentiment, lang='en-GB', gender='f', voice_type='Wavenet', outfile='output'):
+    """
+    text: str           The text to be spoken.
+    sentiment: float    A float between 0 and 1 indicating how negative or positive the text is.
+    """
+    client = tts.TextToSpeechClient()
+
+    ssml = generate_ssml(text, sentiment)
+    input_text = tts.types.SynthesisInput(ssml=ssml)
+
+    # Note: the voice can also be specified by name.
+    # Names of voices can be retrieved with client.list_voices().
+    # for voice in client.list_voices().voices:
+    #     if voice.language_codes[0].startswith('en'):
+    #         print(voice)
+ 
+    voice_name = generate_voice_name(lang, gender, voice_type)
+    voice = tts.types.VoiceSelectionParams(language_code=lang, name=voice_name)
+
+    audio_config = tts.types.AudioConfig(audio_encoding=tts.enums.AudioEncoding.MP3)
+    # Synthesize speech and write to output file.
+    response = client.synthesize_speech(input_text, voice, audio_config)
+    # The response's audio_content is binary.
+    with open(f'outputs/{outfile}.mp3', 'wb') as mp3:
+        mp3.write(response.audio_content)
+    with open(f'outputs/{outfile}.txt', 'w') as metadata:
+        s = f'Text: {text}\nSentiment: {str(sentiment)}\nSSML: {ssml}\nVoice name: {voice_name}'
+        metadata.write(s)
+    print(f'Data saved to outputs/{outfile}')
+
+if __name__ == '__main__':
+    # export GOOGLE_APPLICATION_CREDENTIALS=~/.google_cloud_auth.json
+    now = str(datetime.datetime.today().strftime('%Y-%m-%d-%H-%M-%S'))
+    for i, sentiment in enumerate([0.05, 0.25, 0.45, 0.65, 0.85]):
+        synthesize_speech("Don't be angry, uncle. Come! Dine with us to-morrow.", sentiment, outfile=str(i))

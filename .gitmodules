@@ -1,0 +1,3 @@
+[submodule "CRAFT"]
+	path = CRAFT
+        url = https://github.com/sallyjyl/CRAFT.git
