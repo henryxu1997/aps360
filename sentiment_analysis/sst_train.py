@@ -6,63 +6,34 @@ import torchtext
 import numpy as np
 import matplotlib.pyplot as plt
 
+from data_processing import get_iters,load_sst_dataset
+
 root = ''
 
 
-glove = torchtext.vocab.GloVe(name="6B", dim=50, max_vectors=10000)
+glove = torchtext.vocab.GloVe(name="6B", dim=50)
 
 def split_sentence(line):
     line = line.replace(".", " . ").replace(",", " , ").replace(";", " ; ").replace("?", " ? ").lower()
     words = line.split()
     return words
 
-text_field = torchtext.data.Field(sequential=True,      # text sequence
-                                  tokenize=split_sentence, # because are building a character-RNN
-                                  include_lengths=True, # to track the length of sequences, for batching
-                                  batch_first=True,
-                                  use_vocab=True)       # to turn each character into an integer index
-label_field = torchtext.data.Field(sequential=False,    # not a sequence
-                                   use_vocab=False,     # don't need to track vocabulary
-                                   is_target=True,      
-                                   batch_first=True,
-                                   preprocessing=lambda x: int(x == '1')) # convert text to 0 and 1
-
-fields = [('text', text_field) ,('label', label_field)]
-dataset = torchtext.data.TabularDataset(root + "full_comments_labelled.txt", # name of the file
-                                        "tsv",               # fields are separated by a tab
-                                        fields)
-
-(train_text,val_test_text) = dataset.split(split_ratio = 0.6)
-(val_text,test_text) = val_test_text.split(split_ratio = 0.5)
-print(len(train_text),len(val_text),len(test_text))
-print(train_text[0].text)
-
-text_field.build_vocab(train_text,vectors = glove)
-
-test_iter = torchtext.data.BucketIterator(test_text,
-                                           batch_size=32,
-                                           sort_key=lambda x: len(x.text), # to minimize padding
-                                           sort_within_batch=True,        # sort within each batch
-                                           repeat=False)                  # repeat the iterator for many epochs
-
 
 class WordRNN(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(WordRNN, self).__init__()
+        self.num_layers = 2
         self.emb = nn.Embedding.from_pretrained(glove.vectors)
         self.hidden_size = hidden_size
-        self.rnn = nn.GRU(input_size,hidden_size,num_layers = 2, batch_first=True, dropout = 0.4)
-        self.fc = nn.Linear(hidden_size*2,2)
-        self.fc2 = nn.Linear(30,2)
-        self.dropout=nn.Dropout(0.4)
+        self.rnn = nn.GRU(input_size,hidden_size,num_layers = self.num_layers, batch_first=True, dropout = 0.4)
+        self.fc = nn.Linear(hidden_size*2,5)
+
     def forward(self,x):
         x = self.emb(x)  # given batches of sentences
-        h0 = torch.zeros(2,x.size(0),self.hidden_size)
+        h0 = torch.zeros(self.num_layers,x.size(0),self.hidden_size)
         out,_ = self.rnn(x,h0)
         out = torch.cat([torch.max(out, dim=1)[0], 
                 torch.mean(out, dim=1)], dim=1)
-        # out = F.relu(self.fc(self.dropout(out)))
-        # out = self.fc2(out)
         out = self.fc(out)
         return out
 
@@ -103,6 +74,8 @@ def get_loss(model,data_iter):
         tot_loss += float(loss)
     return tot_loss/(i+1)
 
+train_text,val_text,test_text,vocab = load_sst_dataset()
+
 def train_model(model, batch_size = 20, learning_rate = 0.01, num_epoch = 5,
                 weight_decay = 0.0):
       
@@ -118,6 +91,8 @@ def train_model(model, batch_size = 20, learning_rate = 0.01, num_epoch = 5,
                                            sort_within_batch=True,        # sort within each batch
                                            repeat=False)                  # repeat the iterator for many epochs
     
+    #train_iter,valid_iter,test_iter = get_iters(batch_size = batch_size)
+
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
                                  weight_decay = weight_decay)
@@ -132,7 +107,6 @@ def train_model(model, batch_size = 20, learning_rate = 0.01, num_epoch = 5,
             data = batch.text[0]
             
             output = model(data)
-            
             loss = criterion(output, label)
             loss.backward()
             optimizer.step()
@@ -176,28 +150,4 @@ def train_model(model, batch_size = 20, learning_rate = 0.01, num_epoch = 5,
     plt.savefig('accuracy.png')
 
 model = WordRNN(50,50)
-train_model(model,batch_size = 100, learning_rate = 0.001, num_epoch = 50,weight_decay = 0.001)
-
-
-
-# import torch
-# import torch.nn as nn
-# import torch.nn.functional as F
-# import torch.optim as optim
-# import torchtext
-# import numpy as np
-# import matplotlib.pyplot as plt
-
-# files = ["amazon_cells_labelled.txt", "imdb_labelled.txt", "yelp_labelled.txt"]
-
-# labels = []
-# sentences = []
-# for file in files:
-# 	for line in open(file):
-# 		words = line.split()
-# 		sentences.append(words[:-1])
-# 		labels.append(int(words[len(words)-1]))
-# print("it ran")
-# # convert label to tensor
-# # convert 
-# #print(labels, len(labels))
+train_model(model,batch_size = 100, learning_rate = 0.001, num_epoch = 300,weight_decay = 0.001)
