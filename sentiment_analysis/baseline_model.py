@@ -31,8 +31,25 @@ class BaselineModel:
         # Else return positive or negative depending on which has more.
         return 1.0 if pos_count > 0 else 0.0
 
+def ucl_performance(model):
+    count = 0
+    total = 0
+    path = "UCL_data/full_comments_labelled.txt"
+    for line in open(path):
+        text,label = line.split('\t')
+        label = float(label)
+        out = model.get_sentiment(text)
+        if out == label:
+            count+=1
+        if out != 0.5:
+            total+=1
+    print(count,total)
+    print(float(count)/total)
+
 if __name__ == '__main__':
+    print("baseline")
     model = BaselineModel()
-    x = model.get_sentiment('This cake is good.')
-    y = model.get_sentiment('The big fox is nasty')
-    print(x, y)
+    # x = model.get_sentiment('This cake is good.')
+    # y = model.get_sentiment('The big fox is nasty')
+    # print(x, y)
+    ucl_performance(model)
