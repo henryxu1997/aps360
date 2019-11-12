@@ -99,7 +99,12 @@ def create_iter(dataset, batch_size, device='cpu'):
 
 def sst_analysis():
     train_set, valid_set, test_set, vocab = load_sst_dataset()
+    print('Train size:', len(train_set))
+    print('Valid size:', len(valid_set))
+    print('Test size:', len(test_set))
+    print('Training sample:', train_set[0].text, train_set[0].label)
     print('Sample of vocab:', vocab.itos[:10])
+
     train_iter = create_iter(train_set, batch_size=32)
     for batch in train_iter:
         print(batch.label)
