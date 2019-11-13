@@ -36,7 +36,7 @@ def _analyze_data(dataset):
             print('Example:', example.text, '\nLabel:', example.label)
     print('Label counts:', sorted(counts.items()))
     
-def load_sst_dataset(root='.data'):
+def load_sst_dataset(root='.data', return_example = False):
     """Loads train, validation, test dataset from SST raw data."""
 
     def get_label_value(label):
@@ -48,7 +48,7 @@ def load_sst_dataset(root='.data'):
         sequential=True, batch_first=True, include_lengths=True)
     label_field = torchtext.data.Field(
         sequential=False, batch_first=True, use_vocab=False,
-        dtype=torch.float32,
+        dtype=torch.long,
         preprocessing=torchtext.data.Pipeline(get_label_value))
 
     fields = [('text', text_field), ('label', label_field)]
@@ -71,6 +71,9 @@ def load_sst_dataset(root='.data'):
         test_examples = [torchtext.data.Example.fromtree(line, fields) for line in f]
 
     _analyze_data(train_examples)
+
+    if return_example:
+        return train_examples, valid_examples, test_examples
 
     train_data = torchtext.data.Dataset(train_examples, fields)
     valid_data = torchtext.data.Dataset(valid_examples, fields)
@@ -108,6 +111,13 @@ def sst_analysis():
         data, lengths = batch.text
         # print(data)
         break
+
+def get_iters(batch_size):
+    train_data,validation_data,test_data, vocab = load_sst_dataset()
+    train_iter = create_iter(train_data,batch_size)
+    val_iter = create_iter(validation_data,batch_size)
+    test_iter = create_iter(test_data,batch_size)
+    return train_iter,val_iter,test_iter
 
 def manual_embeddings():
     test = split_text('the quick brown fox jumped over the green turtle. it was really exciting! HYPE?')
