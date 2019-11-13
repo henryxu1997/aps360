@@ -33,6 +33,7 @@ def resizeImage(img):
     return (w, h)
 
 def cropImage(imgPath, coordPath, dirname, resizeImage=False):
+    print(f'Cropping image {imgPath} {coordPath} {dirname}')
     img = Image.open(imgPath)
     root = os.path.splitext(os.path.basename(imgPath))[0]
     coords = open(coordPath, 'r').readlines()
@@ -45,5 +46,10 @@ def cropImage(imgPath, coordPath, dirname, resizeImage=False):
             print ("RESIZING")
             img_cropped = img.resize(resizeImage(img_cropped))
         img_cropped = img_cropped.convert("RGB")
-        img_cropped.save(dirname + root + '_cropped_' + str(i) + '.jpg')
-        print("Saved: " + root + '_cropped_' + str(i) + '.jpg')
+        path = os.path.join(dirname, f'{root}_cropped_{str(i)}.jpg')
+        img_cropped.save(path)
+        print(f'Saved cropped file to: {path}')
+
+if __name__ == '__main__':
+    print('Intentionally empty. Can uncomment below to run function on an image PDF and a text file of coordinates.')
+    # cropImage('../data/test/test1.png', '../data/result/res_test1.txt', './data')
