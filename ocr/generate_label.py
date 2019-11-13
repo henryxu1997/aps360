@@ -15,6 +15,8 @@ def generateLabelsForTrainingImages(data_path):
 	file_names = []
 	write_to_csv = [("File name", "Label")]
 	valid_file_types = [".jpg", ".png"]
+	imagePathList = []
+	labelList = []
 
 	# create label for each training image
 	for f in os.listdir(data_path):
@@ -22,12 +24,17 @@ def generateLabelsForTrainingImages(data_path):
 			label = pytesseract.image_to_string(Image.open(data_path+f))
 			if label:
 				write_to_csv.append((f, label))
+				imagePathList.append(data_path + "/" + f)
+				labelList.append(label)
 
 	# write training image file name and label into CSV
 	with open("next_input.csv", "w+") as csv_file:
 		writer = csv.writer(csv_file, delimiter = ',')
 		for line in write_to_csv:
 			writer.writerow(line)
+	
+	return (imagePathList, labelList)
+
 
 # argv[1] is path to training images
 if __name__ == "__main__":
