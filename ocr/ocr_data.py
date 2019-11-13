@@ -7,11 +7,7 @@ from PIL import Image
 import torch
 
 def load_image(image_path):
-    img = Image.open(image_path).convert('RGB')
-    return np.asarray(img)
-
-def np_img_to_tensor(np_img):
-    return torch.from_numpy(np_img.transpose((2, 0, 1)))
+    return Image.open(image_path).convert('L').resize((100, 32), Image.ANTIALIAS)
 
 class WordsDataset(torch.utils.data.Dataset):
     """
@@ -32,7 +28,7 @@ class WordsDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         img_path = os.path.join(self.data_dir, self.words_frame.iloc[idx, 0])
-        img = np_img_to_tensor(load_image(img_path))
+        img = torch.from_numpy(np.asarray(load_image(img_path)))
 
         label = self.words_frame.iloc[idx, 1]
 
@@ -44,6 +40,10 @@ if __name__ == '__main__':
 
     data = WordsDataset(csv_file, data_dir)
     loader = torch.utils.data.DataLoader(data, batch_size=64)
-    for sample in loader:
-        print(sample)
+    for batch in loader:
+        images, labels = batch
+        print(images.shape)
+        for sample in images:
+            print(sample)
+            break
         break
