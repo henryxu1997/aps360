@@ -1,26 +1,28 @@
-"""
-Customizable sentiment analysis neural network.
-"""
 import torch
 import torch.nn as nn
 
 
 class SANet(nn.Module):
-    def __init__(self, vocab, layer_type='rnn', hidden_size=10, num_layers=1, dropout=0.0):
+    """
+    Customizable sentiment analysis neural network.
+    """
+    def __init__(self, embeddings, layer_type='rnn', hidden_size=10, num_layers=1, dropout=0.0):
         super().__init__()
-        self.name = f'SANet:{layer_type}:{hidden_size}:{num_layers}:{dropout}'
+        self.vocab_size, self.emb_size = embeddings.shape
         self.layer_type = layer_type
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.dropout = dropout
+        self.name = f'SANet:{self.vocab_size}:{self.emb_size}:{layer_type}:{hidden_size}:{num_layers}:{dropout}'
         # output_size= 5 (strong negative, negative, neutral, positive, strong positive)
         self.output_size = 5    
-        self.vocab_size, self.emb_size = vocab.vectors.shape
 
         # Create an embedding layer that will map a vector of word indices 
         # to embedding vectors of size emb_size.
-        self.embed = nn.Embedding(self.vocab_size, self.emb_size)
-        # self.embed.weight.data.copy_(vocab.vectors)
+        # TODO: verify validity of embedding
+        # self.embed = nn.Embedding(self.vocab_size, self.emb_size)
+        # self.embed.weight.data.copy_(embeddings)
+        self.embed = nn.Embedding.from_pretrained(embeddings)
 
         if layer_type == 'rnn':
             self.rnn_layer = nn.RNN(input_size=self.emb_size,

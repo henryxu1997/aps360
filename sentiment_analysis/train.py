@@ -22,32 +22,30 @@ def get_accuracy(model, data_iter):
         total += len(result)
     return correct / total
 
-def plot_curves(path, plot_dir='graphs', val=True):
+def plot_curves(path, val=True):
     plots = {
         'Loss': ['train_loss', 'val_loss'],
         'Accuracy': ['train_acc', 'val_acc']
     }
     for plot_name, plots in plots.items():
         plt.title(f'Train vs Validation {plot_name}')
-        train_nums = np.loadtxt(f'{path}_{plots[0]}.csv')
+        train_nums = np.loadtxt(f'outputs/{path}_{plots[0]}.csv')
         n = len(train_nums)
         plt.plot(range(1,n+1), train_nums, label='Train')
         if val:
-            val_nums = np.loadtxt(f'{path}_{plots[1]}.csv')
+            val_nums = np.loadtxt(f'outputs/{path}_{plots[1]}.csv')
             plt.plot(range(1,n+1), val_nums, label='Validation')
         plt.xlabel('Epoch')
         plt.ylabel(plot_name)
         plt.legend(loc='best')
-        plt.savefig(os.path.join(plot_dir, f'{path}_{plot_name.lower()}.png'))
+        plt.savefig(f'graphs/{path}_{plot_name.lower()}.png')
         plt.show()
 
-def train_network(model, train_set, valid_set=None, output_dir='outputs',
+def train_network(model, train_set, valid_set=None,
                   learning_rate=0.01, weight_decay=0.0, batch_size=64, num_epochs=32):
     """
     Customizable training loop
     """
-    # For reproducibility, set a random seed
-    torch.manual_seed(42)
     train_iter = create_iter(train_set, batch_size)
     if valid_set:
         valid_iter = create_iter(valid_set, batch_size)
@@ -92,17 +90,23 @@ def train_network(model, train_set, valid_set=None, output_dir='outputs',
             print(f'Epoch {epoch}; Train loss {epoch_train_loss}; Val loss {epoch_val_loss}; Train acc {xx}; Val acc {yy}')
         else:
             print(f'Epoch {epoch}; Train loss {epoch_train_loss}; Train acc {xx}')
+        if epoch % 10 == 0:
+            e_str = str(epoch).zfill(2)
+            model_path = f'{model.name}:lr={learning_rate}:wd={weight_decay}:b={batch_size}epoch={e_str}.pt'
+            torch.save(model.state_dict(), os.path.join('models', model_path))
+
     csv_path = f'{model.name}:lr={learning_rate}:wd={weight_decay}:b={batch_size}:e={num_epochs}'
-    np.savetxt(os.path.join(output_dir, "{}_train_loss.csv".format(csv_path), train_loss))
-    np.savetxt(os.path.join(output_dir, "{}_train_acc.csv".format(csv_path), train_acc))
+    np.savetxt("outputs/{}_train_loss.csv".format(csv_path), train_loss)
+    np.savetxt("outputs/{}_train_acc.csv".format(csv_path), train_acc)
     if valid_set:
-        np.savetxt(os.path.join(output_dir, '{}_val_loss.csv'.format(csv_path), val_loss))
-        np.savetxt(os.path.join(output_dir, '{}_val_acc.csv'.format(csv_path), val_acc))
+        np.savetxt('outputs/{}_val_loss.csv'.format(csv_path), val_loss)
+        np.savetxt('outputs/{}_val_acc.csv'.format(csv_path), val_acc)
     return csv_path
 
 def manual_run(sentence):
     words = split_text(sentence)
-    model = SANet(vocab)
+    from data_processing import glove
+    model = SANet(glove.vectors)
     word_tensor = torch.zeros(len(words), dtype=int)
     print('Length of vocab', len(vocab))
     for i, word in enumerate(words):
@@ -113,10 +117,18 @@ def manual_run(sentence):
     print(out)
 
 
+def make_dirs_if_not_exist():
+    for directory in ['outputs', 'models', 'graphs']:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 def main():
+    make_dirs_if_not_exist()
+    # For reproducibility, set a random seed
+    torch.manual_seed(42)
     train_set, valid_set, test_set, vocab = load_sst_dataset()
-    model = SANet(vocab)
-    path = train_network(model, train_set, valid_set, num_epochs=15)
+    model = SANet(vocab.vectors)
+    print(model)
+    path = train_network(model, train_set, valid_set, num_epochs=64)
     plot_curves(path)
 
 if __name__ == '__main__':
