@@ -16,6 +16,7 @@ def split_text(text):
                 .replace("!", " ! ")
     return text.lower().split()
 
+'''
 def convert_words_to_embeddings(words):
     """
     words = List[str]
@@ -24,6 +25,7 @@ def convert_words_to_embeddings(words):
     for i, word in enumerate(words):
         x[i] = glove[word]
     return x
+'''
 
 def _analyze_data(dataset):
     """Prints out an example from every category (0-4)."""
@@ -36,14 +38,13 @@ def _analyze_data(dataset):
             print('Example:', example.text, '\nLabel:', example.label)
     print('Label counts:', sorted(counts.items()))
     
-def load_sst_dataset(root='.data', return_example = False):
+def load_sst_dataset(root='.data', analyze_data=False):
     """Loads train, validation, test dataset from SST raw data."""
 
     def get_label_value(label):
         return int(label)
-    #     return label
-    #     return {'0': 0.0, '1': 0.25, '2': 0.5, '3': 0.75, '4': 1.0}[label]
 
+    # Define text and label fields
     text_field = torchtext.data.Field(
         sequential=True, batch_first=True, include_lengths=True)
     label_field = torchtext.data.Field(
@@ -53,15 +54,13 @@ def load_sst_dataset(root='.data', return_example = False):
 
     fields = [('text', text_field), ('label', label_field)]
 
+    # This will download SST dataset to .data if not already present.
     path = torchtext.datasets.SST.download(root)
 
-    train_file = 'train.txt'
-    valid_file = 'dev.txt'
-    test_file = 'test.txt'
-
-    train_path = os.path.join(path, train_file)
-    valid_path = os.path.join(path, valid_file)
-    test_path = os.path.join(path, test_file)
+    # Train, validation, and test data already in separate files.
+    train_path = os.path.join(path, 'train.txt')
+    valid_path = os.path.join(path, 'dev.txt')
+    test_path = os.path.join(path, 'test.txt')
 
     with open(os.path.expanduser(train_path)) as f:
         train_examples = [torchtext.data.Example.fromtree(line, fields) for line in f]
@@ -70,10 +69,8 @@ def load_sst_dataset(root='.data', return_example = False):
     with open(os.path.expanduser(test_path)) as f:
         test_examples = [torchtext.data.Example.fromtree(line, fields) for line in f]
 
-    _analyze_data(train_examples)
-
-    if return_example:
-        return train_examples, valid_examples, test_examples
+    if analyze_data:
+        _analyze_data(train_examples)
 
     train_data = torchtext.data.Dataset(train_examples, fields)
     valid_data = torchtext.data.Dataset(valid_examples, fields)
@@ -112,19 +109,22 @@ def sst_analysis():
         # print(data)
         break
 
-def get_iters(batch_size):
-    train_data,validation_data,test_data, vocab = load_sst_dataset()
-    train_iter = create_iter(train_data,batch_size)
-    val_iter = create_iter(validation_data,batch_size)
-    test_iter = create_iter(test_data,batch_size)
-    return train_iter,val_iter,test_iter
-
+'''
 def manual_embeddings():
     test = split_text('the quick brown fox jumped over the green turtle. it was really exciting! HYPE?')
     embedding = convert_words_to_embeddings(test)
     print(embedding.shape, len(test))
+'''
+
+def glove_exploration():
+    words = 'happy sad king queen relevant hyperbole'.split()
+    for word in words:
+        print(glove[word])
+    print(dir(glove))
+    print(len(glove.itos))
 
 if __name__ == '__main__':
     sst_analysis()
+    glove_exploration()
 
     
