@@ -38,7 +38,7 @@ def _analyze_data(dataset):
             print('Example:', example.text, '\nLabel:', example.label)
     print('Label counts:', sorted(counts.items()))
     
-def load_sst_dataset(root='.data', analyze_data=False):
+def load_sst_dataset(root='.data', analyze_data=False, char_base = False, three_labels = False):
     """Loads train, validation, test dataset from SST raw data."""
 
     def get_label_value(label):

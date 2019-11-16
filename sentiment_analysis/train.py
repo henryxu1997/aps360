@@ -131,7 +131,29 @@ def main():
     path = train_network(model, train_set, valid_set, num_epochs=64)
     plot_curves(path)
 
+
+def call_with_options(char_base, three_labels, regression):
+    make_dirs_if_not_exist()
+    # For reproducibility, set a random seed
+    torch.manual_seed(42)
+    train_set, valid_set, test_set, vocab = load_sst_dataset( char_base = char_base, three_labels = three_labels, regression = regression)
+    
+    if char_base:
+        model = CharNet()
+    else:
+        model = SANet(vocab.vectors)
+    
+
+    print(model)
+    path = train_network(model, train_set, valid_set, num_epochs=64)
+    plot_curves(path)
+
+
+
+
 if __name__ == '__main__':
     # manual_run('the movie was phenomenal')
     main()
-
+    char_base = False
+    three_labels = False
+    regression = False
