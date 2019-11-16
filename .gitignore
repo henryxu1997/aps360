@@ -3,4 +3,4 @@ __pycache__
 .data
 .vector_cache/
 .DS_Store
-outputs
+character_recognition/data
