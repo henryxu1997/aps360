@@ -40,6 +40,7 @@ def plot_curves(path, val=True):
         plt.legend(loc='best')
         plt.savefig(f'graphs/{path}_{plot_name.lower()}.png')
         plt.show()
+        plt.close()
 
 def train_network(model, train_set, valid_set=None,
                   learning_rate=0.01, weight_decay=0.0, batch_size=64, num_epochs=32):
@@ -61,7 +62,7 @@ def train_network(model, train_set, valid_set=None,
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     for epoch in range(num_epochs):
         epoch_train_loss = 0.
-        for batch in train_iter:
+        for i,batch in enumerate(train_iter):
             outputs = model(batch.text[0])
             # Sanity check
             # assert outputs.shape == (batch_size, 5)
@@ -70,14 +71,16 @@ def train_network(model, train_set, valid_set=None,
             optimizer.step()
             optimizer.zero_grad()
             epoch_train_loss += loss.item()
+        epoch_train_loss = epoch_train_loss/(i+1)
         train_loss[epoch] = epoch_train_loss
 
         if valid_set:
             epoch_val_loss = 0.
-            for batch in valid_iter:
+            for i,batch in enumerate(valid_iter):
                 outputs = model(batch.text[0])
                 loss = criterion(outputs, batch.label)
                 epoch_val_loss += loss.item()
+            epoch_val_loss = epoch_val_loss/(i+1)
             val_loss[epoch] = epoch_val_loss
 
         # Get training, validation accuracy
