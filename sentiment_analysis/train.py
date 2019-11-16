@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 from data_processing import load_sst_dataset, create_iter, split_text
-from network import SANet
+from network import SANet, CharSANet
 
 def get_accuracy(model, data_iter):
     correct, total = 0, 0
@@ -136,10 +136,10 @@ def call_with_options(char_base, three_labels, regression):
     make_dirs_if_not_exist()
     # For reproducibility, set a random seed
     torch.manual_seed(42)
-    train_set, valid_set, test_set, vocab = load_sst_dataset( char_base = char_base, three_labels = three_labels, regression = regression)
+    train_set, valid_set, test_set, vocab = load_sst_dataset(char_base = char_base, three_labels = three_labels, regression = regression)
     
     if char_base:
-        model = CharNet()
+        model = CharSANet(vocab)
     else:
         model = SANet(vocab.vectors)
     
@@ -153,7 +153,8 @@ def call_with_options(char_base, three_labels, regression):
 
 if __name__ == '__main__':
     # manual_run('the movie was phenomenal')
-    main()
+    #main()
     char_base = False
-    three_labels = False
+    three_labels = True
     regression = False
+    call_with_options(char_base = char_base,three_labels = three_labels, regression = regression)
