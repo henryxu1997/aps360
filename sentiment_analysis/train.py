@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 from data_processing import load_sst_dataset, create_iter, split_text
-from network import SANet, CharSANet
+from network import WordSANet, CharSANet
 
 def get_regression_accuracy(model, data_iter, three_labels):
     correct, total = 0, 0
@@ -134,7 +134,10 @@ def train_network(model, train_set, valid_set=None,  regression = False, three_l
             e_str = str(epoch).zfill(2)
             model_path = f'{model.name}:lr={learning_rate}:wd={weight_decay}:b={batch_size}epoch={e_str}.pt'
             torch.save(model.state_dict(), os.path.join('models', model_path))
-
+    if valid_set:
+        np_val_acc = np.array(val_acc)
+        i = np.argmax(np_val_acc)
+        print(i+1,np_val_acc[i])
     csv_path = f'{model.name}:lr={learning_rate}:wd={weight_decay}:b={batch_size}:e={num_epochs}'
     np.savetxt("outputs/{}_train_loss.csv".format(csv_path), train_loss)
     np.savetxt("outputs/{}_train_acc.csv".format(csv_path), train_acc)
@@ -185,21 +188,18 @@ def call_with_options(char_base, three_labels, regression):
         output_size = 1
 
     if char_base:
-        model = CharSANet(vocab,output_size = output_size)
+        model = CharSANet(vocab, layer_type = 'rnn' ,output_size = output_size, regression = regression)
     else:
-        model = SANet(vocab.vectors,output_size = output_size,regression = regression)
+        model = WordSANet(vocab.vectors, layer_type = 'gru',output_size = output_size,regression = regression)
     
     print(model)
-    path = train_network(model, train_set, valid_set, three_labels = three_labels,regression = regression, num_epochs=30)
+    path = train_network(model, train_set, valid_set, three_labels = three_labels, regression = regression, num_epochs=10)
     plot_curves(path)
-
-
-
 
 if __name__ == '__main__':
     # manual_run('the movie was phenomenal')
     #main()
-    char_base = False
+    char_base = True
     three_labels = True
-    regression = True
+    regression = False
     call_with_options(char_base = char_base,three_labels = three_labels, regression = regression)
