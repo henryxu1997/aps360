@@ -1,5 +1,4 @@
 import os
-import string
 import time
 
 import matplotlib.pyplot as plt
@@ -10,26 +9,7 @@ from torch import optim
 
 from network import CharacterClassifier
 from data_processing import load_dataset, get_small_dataloader, split_dataset
-'''
-def rename_data():
-    # Character data from http://www.ee.surrey.ac.uk/CVSSP/demos/chars74k/
-    character_order = string.digits + string.ascii_uppercase + string.ascii_lowercase
-    print(character_order)
-    dir_names = sorted(os.listdir('data'))
-    print(len(character_order), len(dir_names))
-    assert len(dir_names) == len(character_order)
 
-    for c, dir_name in zip(character_order, dir_names):
-        if dir_name.startswith('Sample'):
-            old_path = os.path.join('data', dir_name)
-            if c in string.digits:
-                os.rename(old_path, os.path.join('data', c + '_digit'))
-            elif c in string.ascii_uppercase:
-                os.rename(old_path, os.path.join('data', c + '_upper'))
-            if c in string.ascii_lowercase:
-                os.rename(os.path.join('data', dir_name), os.path.join('data', c + '_lower'))
-rename_data()
-'''
 def plot_curves(path, val=True):
     plots = {
         'Loss': ['train_loss', 'val_loss'],
@@ -61,6 +41,9 @@ def get_accuracy(model, data_loader):
         total += len(result)
     return correct / total
 
+def get_time_delta_str(start_time):
+    return '{:.2f}'.format(time.time()-start_time)
+
 def train_network(network, train_loader, val_loader=None, learning_rate=0.01, num_epochs=32):
     # Logging
     print('Number of parameters=', sum([param.numel() for param in network.parameters()]))
@@ -80,8 +63,7 @@ def train_network(network, train_loader, val_loader=None, learning_rate=0.01, nu
     for epoch in range(num_epochs):
         # Train
         per_epoch_train_loss = 0.
-        num_correct = 0
-        num_examples = 0
+        num_correct, num_examples = 0, 0
         for batch_idx, (batch, targets) in enumerate(train_loader):
             # Zero the parameter gradients
             optimizer.zero_grad()
@@ -93,27 +75,39 @@ def train_network(network, train_loader, val_loader=None, learning_rate=0.01, nu
             # Add to running loss total
             per_epoch_train_loss += loss.item()
 
-        train_loss[epoch] = per_epoch_train_loss
-        train_acc[epoch] = get_accuracy(network, train_loader)
+            # Put this here for training efficiency
+            output_prob = torch.softmax(outputs, dim=1)
+            _, indices = output_prob.max(1)
+            num_correct += (indices == targets).sum().item()
+            num_examples += len(targets)
 
-        # Save the current model (checkpoint) to a file
-        e_str = str(epoch).zfill(3)
-        model_path = f'models/{network.name}:lr={learning_rate}:epoch={e_str}.pt'
-        torch.save(network.state_dict(), model_path)
+        train_loss[epoch] = per_epoch_train_loss
+        train_acc[epoch] = num_correct / num_examples #get_accuracy(network, train_loader)
+
+        if epoch % 5 == 0:
+            # Save the current model (checkpoint) to a file
+            e_str = str(epoch).zfill(3)
+            model_path = f'models/{network.name}:lr={learning_rate}:epoch={e_str}.pt'
+            torch.save(network.state_dict(), model_path)
 
         if val_loader is None:
-            print('Epoch=', epoch, ' train_acc=', train_acc[epoch], ' train_loss=', train_loss[epoch])
+            print(f'Epoch={epoch} train_acc={train_acc[epoch]}, train_loss={train_loss[epoch]}, Time elapsed: {get_time_delta_str(start_time)}')
             continue
         # Validate
         per_epoch_val_loss = 0.
+        num_correct, num_examples = 0, 0
         for _, (batch, targets) in enumerate(val_loader):
             outputs = network(batch)
             loss = criterion(outputs, targets)
             per_epoch_val_loss += loss.item()
+            # Training efficiency
+            output_prob = torch.softmax(outputs, dim=1)
+            _, indices = output_prob.max(1)
+            num_correct += (indices == targets).sum().item()
+            num_examples += len(targets)
         val_loss[epoch] = per_epoch_val_loss
-        val_acc[epoch] = get_accuracy(network, val_loader)
-        print('Epoch=', epoch, ' train_acc=', train_acc[epoch], ' train_loss=', train_loss[epoch], 
-            'val_acc', val_acc[epoch], 'val_loss=', val_loss[epoch])
+        val_acc[epoch] = num_correct / num_examples #get_accuracy(network, val_loader)
+        print(f'Epoch={epoch} train_acc={train_acc[epoch]}, train_loss={train_loss[epoch]} val_acc {val_acc[epoch]}, val_loss={val_loss[epoch]} Time elapsed: {get_time_delta_str(start_time)}')
 
     print("Total time elapsed: {:.2f} seconds".format(time.time()-start_time))
     # Write the train/test loss/acc into CSV file for plotting later
@@ -127,11 +121,10 @@ def train_network(network, train_loader, val_loader=None, learning_rate=0.01, nu
     
 
 def verify_on_small_dataset():
-    # network = CharacterClassifier(num_classes=4)
-    # full_dataset = load_dataset()
-    # dataloader = get_small_dataloader(full_dataset, num_classes=4)
-    # path = train_network(network, dataloader)
-    path = 'nc=4:F=3:M=5:lr=0.01:epochs=32'
+    network = CharacterClassifier(num_classes=4)
+    full_dataset = load_dataset()
+    dataloader = get_small_dataloader(full_dataset, num_classes=4)
+    path = train_network(network, dataloader)
     plot_curves(path, val=False)
 
 def main():
@@ -141,5 +134,21 @@ def main():
     path = train_network(network, train, val, num_epochs=128)
     plot_curves(path)
 
+def load_model(model_path):
+    network = CharacterClassifier()
+    network.load_state_dict(torch.load(model_path))
+    return network
+
+def test():
+    # Chosen by Jordan as the best model
+    model_path = 'models/nc=62:F=3:M=5:lr=0.01:epoch=010.pt'
+    network = load_model(model_path)
+    full_dataset = load_dataset()
+    _, __, test = split_dataset(full_dataset)
+    test_acc = get_accuracy(network, test)
+    print(f'Test accuracy = {test_acc}')
+
 if __name__ == '__main__':
-    main()
+    #verify_on_small_dataset()
+    # main()
+    test()
