@@ -9,6 +9,34 @@ import torch.nn as nn
 from data_processing import load_sst_dataset, create_iter, split_text
 from network import SANet, CharSANet
 
+def get_regression_accuracy(model, data_iter, three_labels):
+    correct, total = 0, 0
+    for batch in data_iter:
+        outputs = model(batch.text[0])
+
+        for (output,label) in zip(outputs,batch.label):
+            if three_labels:
+                if output < 0.5 and label == 0:
+                    correct+=1
+                elif output < 1.5 and label == 1:
+                    correct+=1
+                elif output>=1.5 and label == 2:
+                    correct+=1
+            else:
+                if output < 0.5 and label == 0:
+                    correct+=1
+                elif output < 1.5 and label == 1:
+                    correct+=1
+                elif output < 2.5 and label == 2:
+                    correct+=1
+                elif output < 3.5 and label == 3:
+                    correct+=1
+                elif output>=3.5 and label == 4:
+                    correct+=1
+            total+=1
+    return correct/total
+
+
 def get_accuracy(model, data_iter):
     correct, total = 0, 0
     for batch in data_iter:
@@ -42,7 +70,7 @@ def plot_curves(path, val=True):
         plt.show()
         plt.close()
 
-def train_network(model, train_set, valid_set=None,
+def train_network(model, train_set, valid_set=None,  regression = False, three_labels = False,
                   learning_rate=0.01, weight_decay=0.0, batch_size=64, num_epochs=32):
     """
     Customizable training loop
@@ -58,7 +86,10 @@ def train_network(model, train_set, valid_set=None,
 
     # Define loss and optimizer
     # Since multi-class classification, use CrossEntropyLoss
-    criterion = nn.CrossEntropyLoss()
+    if not regression:
+        criterion = nn.CrossEntropyLoss()
+    else:
+        criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     for epoch in range(num_epochs):
         epoch_train_loss = 0.
@@ -84,11 +115,17 @@ def train_network(model, train_set, valid_set=None,
             val_loss[epoch] = epoch_val_loss
 
         # Get training, validation accuracy
-        xx = get_accuracy(model, train_iter)
+        if regression:
+            xx = get_regression_accuracy(model,train_iter,three_labels)
+        else:
+            xx = get_accuracy(model, train_iter)
         train_acc[epoch] = xx
 
         if valid_set:
-            yy = get_accuracy(model, valid_iter)
+            if regression:
+                yy = get_regression_accuracy(model, valid_iter,three_labels)
+            else:
+                yy = get_accuracy(model, valid_iter)
             val_acc[epoch] = yy
             print(f'Epoch {epoch}; Train loss {epoch_train_loss}; Val loss {epoch_val_loss}; Train acc {xx}; Val acc {yy}')
         else:
@@ -141,14 +178,19 @@ def call_with_options(char_base, three_labels, regression):
     torch.manual_seed(42)
     train_set, valid_set, test_set, vocab = load_sst_dataset(char_base = char_base, three_labels = three_labels, regression = regression)
     
-    if char_base:
-        model = CharSANet(vocab)
-    else:
-        model = SANet(vocab.vectors)
-    
+    output_size = 5
+    if three_labels:
+        output_size = 3
+    if regression:
+        output_size = 1
 
+    if char_base:
+        model = CharSANet(vocab,output_size = output_size)
+    else:
+        model = SANet(vocab.vectors,output_size = output_size,regression = regression)
+    
     print(model)
-    path = train_network(model, train_set, valid_set, num_epochs=64)
+    path = train_network(model, train_set, valid_set, three_labels = three_labels,regression = regression, num_epochs=30)
     plot_curves(path)
 
 
@@ -159,5 +201,5 @@ if __name__ == '__main__':
     #main()
     char_base = False
     three_labels = True
-    regression = False
+    regression = True
     call_with_options(char_base = char_base,three_labels = three_labels, regression = regression)
