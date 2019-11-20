@@ -37,24 +37,24 @@ def generate_voice_name(lang, gender, voice_type):
 def generate_ssml(text, sentiment):
     """
     Generate an SSML XML based for a specific text and sentiment
-    Generally, happier will be higher pitched and faster.
+    Generally, happier will be higher pitched and faster and more negative is lower pitched.
     Reference: https://www.w3.org/TR/speech-synthesis11/#edef_prosody
     """
-    if sentiment > 0.8:
+    if sentiment == 2:
         # Very positive
-        attributes = 'rate="130%" volume="loud" pitch="+3st"'
-    elif sentiment > 0.6:
-        # positive
-        attributes = 'rate="110%" pitch="+2st"'
-    elif sentiment > 0.4:
+        attributes = 'rate="120%" volume="loud" pitch="+3st"'
+    elif sentiment == 1:
         # neutral
         attributes = ''
-    elif sentiment > 0.2:
-        # negative
-        attributes = 'rate="120%" pitch="-3st"'
-    else:
+    elif sentiment == 0:
         # very negative
-        attributes = 'rate="130%" volume="x-loud" pitch="-6st"'
+        attributes = 'rate="120%" volume="x-loud" pitch="-6st"'
+    else:
+        print('Error. invalid sentiment', sentiment)
+
+    # Other possibilities
+    # attributes = 'rate="110%" pitch="+2st"'
+    # attributes = 'rate="120%" pitch="-3st"'
     return f'<speak><prosody {attributes}>{text}</prosody></speak>'
 
 def synthesize_speech(text, sentiment, lang='en-GB', gender='f', voice_type='Wavenet', outfile='output'):
@@ -90,5 +90,5 @@ def synthesize_speech(text, sentiment, lang='en-GB', gender='f', voice_type='Wav
 if __name__ == '__main__':
     # export GOOGLE_APPLICATION_CREDENTIALS=~/.google_cloud_auth.json
     now = str(datetime.datetime.today().strftime('%Y-%m-%d-%H-%M-%S'))
-    for i, sentiment in enumerate([0.05, 0.25, 0.45, 0.65, 0.85]):
+    for i, sentiment in enumerate([0, 1, 2]):
         synthesize_speech("Don't be angry, uncle. Come! Dine with us to-morrow.", sentiment, outfile=str(i))
