@@ -39,6 +39,7 @@ def get_regression_accuracy(model, data_iter, three_labels):
 
 def get_accuracy(model, data_iter):
     correct, total = 0, 0
+    model.eval()
     for batch in data_iter:
         outputs = model(batch.text[0])
         output_prob = torch.softmax(outputs, dim=1)
@@ -48,6 +49,7 @@ def get_accuracy(model, data_iter):
         result = (indices == batch.label)
         correct += result.sum().item()
         total += len(result)
+    model.train()
     return correct / total
 
 def plot_curves(path, val=True):
@@ -70,8 +72,9 @@ def plot_curves(path, val=True):
         plt.show()
         plt.close()
 
-def train_network(model, train_set, valid_set=None,  regression = False, three_labels = False,
-                  learning_rate=0.01, weight_decay=0.0, batch_size=64, num_epochs=32):
+def train_network(model, train_set, valid_set=None, regression=False, three_labels=False,
+                  learning_rate=0.01, weight_decay=0.0, batch_size=64, num_epochs=32,
+                  val_acc_target=None):
     """
     Customizable training loop
     """
@@ -130,7 +133,8 @@ def train_network(model, train_set, valid_set=None,  regression = False, three_l
             print(f'Epoch {epoch}; Train loss {epoch_train_loss}; Val loss {epoch_val_loss}; Train acc {xx}; Val acc {yy}')
         else:
             print(f'Epoch {epoch}; Train loss {epoch_train_loss}; Train acc {xx}')
-        if epoch % 10 == 0:
+        if epoch % 10 == 0 or (valid_set is not None and
+            val_acc_target is not None and yy >= val_acc_target):
             e_str = str(epoch).zfill(2)
             model_path = f'{model.name}:lr={learning_rate}:wd={weight_decay}:b={batch_size}epoch={e_str}.pt'
             torch.save(model.state_dict(), os.path.join('models', model_path))
@@ -179,7 +183,8 @@ def call_with_options(char_base, three_labels, regression):
     make_dirs_if_not_exist()
     # For reproducibility, set a random seed
     torch.manual_seed(42)
-    train_set, valid_set, test_set, vocab = load_sst_dataset(char_base = char_base, three_labels = three_labels, regression = regression)
+    train_set, valid_set, test_set, vocab = load_sst_dataset(
+        char_base=char_base, three_labels=three_labels, regression=regression)
     
     output_size = 5
     if three_labels:
@@ -188,18 +193,23 @@ def call_with_options(char_base, three_labels, regression):
         output_size = 1
 
     if char_base:
-        model = CharSANet(vocab, layer_type = 'rnn' ,output_size = output_size, regression = regression)
+        model = CharSANet(vocab, layer_type='rnn', output_size=output_size,
+            regression=regression)
     else:
-        model = WordSANet(vocab.vectors, layer_type = 'gru',output_size = output_size,regression = regression)
+        model = WordSANet(vocab.vectors, layer_type='lstm',
+            output_size=output_size,regression=regression, hidden_size=108,
+            num_layers=1, dropout=0.0)
     
     print(model)
-    path = train_network(model, train_set, valid_set, three_labels = three_labels, regression = regression, num_epochs=10)
+    path = train_network(model, train_set, valid_set,
+        three_labels=three_labels, regression=regression, num_epochs=15,
+        learning_rate=0.0007, batch_size=64, val_acc_target=0.66)
     plot_curves(path)
 
 if __name__ == '__main__':
     # manual_run('the movie was phenomenal')
     #main()
-    char_base = True
+    char_base = False
     three_labels = True
     regression = False
-    call_with_options(char_base = char_base,three_labels = three_labels, regression = regression)
+    call_with_options(char_base=char_base, three_labels=three_labels, regression=regression)

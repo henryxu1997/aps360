@@ -4,7 +4,7 @@ import os
 import torch
 import torchtext
 
-EMBEDDING_SIZE = 50
+EMBEDDING_SIZE = 200
 glove = torchtext.vocab.GloVe(name="6B", dim=EMBEDDING_SIZE)
 
 def split_text(text):

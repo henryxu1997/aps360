@@ -24,8 +24,17 @@ class baseSANet(nn.Module):
                                     num_layers=num_layers, 
                                     dropout=dropout, 
                                     batch_first=True)
+        elif layer_type == 'lstm':
+            self.rnn_layer = nn.LSTM(input_size=self.input_size, 
+                                    hidden_size=hidden_size, 
+                                    num_layers=num_layers, 
+                                    dropout=dropout, 
+                                    batch_first=True)
         else:
             raise ValueError(f'Invalid layer_type {layer_type}')
+        
+        self.dropout_layer = nn.Dropout(p=dropout)
+
         # Define fully connected layer
         self.fc = nn.Linear(hidden_size, self.output_size)
         self.regression = regression
@@ -35,6 +44,7 @@ class baseSANet(nn.Module):
         # x is Tensor of [batch_size, sentence_size]
         out, _ = self.rnn_layer(x)
         out = torch.max(out, dim=1)[0]
+        out = self.dropout_layer(out)
         out = self.fc(out)
         if self.regression:
             out = out.squeeze(1)
