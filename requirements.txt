@@ -1,4 +1,5 @@
 # OCR
+
 pdf2image==1.10.0
 pdfminer==20191103
 Pillow==6.2.1
@@ -14,5 +15,9 @@ google-cloud-texttospeech
 
 # CRAFT
 torchvision==0.2.1
-opencv-python==3.4.2.17
+opencv-python==4.1.1.26
 scikit-image==0.14.2
+
+# Character Recognition
+numPy==1.15.4
+keras==2.2.4
