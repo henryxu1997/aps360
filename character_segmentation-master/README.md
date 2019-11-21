@@ -9,4 +9,5 @@ HandWritten/Printed Character Segmentation from paragraphs into individual lette
 <li>Matpltlib</li>
 </ul>
 
-
+Run by using:
+python3 main.py
