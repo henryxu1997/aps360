@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description='Character Bounding Box Cropping')
 parser.add_argument('--input_folder', default='../data/test/', type=str, help='folder path to input images')
 parser.add_argument('--output_folder', default='../data/result/', type=str, help='folder path to results')
 parser.add_argument('--show_images', default=False, type=bool, help='show image with bounding boxes')
-parser.add_argument('--output_letter_size', default=(28,28), type=tuple)
+parser.add_argument('--output_letter_size', default=28, type=int)
 args = parser.parse_args()
 
 def showimages(src_img, bin_img, final_thr):
@@ -437,4 +437,4 @@ if __name__ == '__main__':
     image_list, _, _ = utils.get_files(args.input_folder)
     output_folder = args.output_folder + '/'
     for image in image_list:
-        parseFile(image, output_folder, args.output_letter_size)
+        parseFile(image, output_folder, (args.output_letter_size, args.output_letter_size))

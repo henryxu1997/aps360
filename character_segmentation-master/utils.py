@@ -30,7 +30,7 @@ def list_files(in_path):
             elif ext == '.pdf':
                 pages = convert_from_path(os.path.join(dirpath, file))
                 for i, page in enumerate(pages):
-                    p_name = filename + "_" + str(i) + ".jpg"
+                    p_name = filename + str(i) + ".jpg"
                     page.save(os.path.join(dirpath, p_name), 'JPEG')
                     img_files.append(os.path.join(dirpath, p_name))
                     

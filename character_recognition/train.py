@@ -8,7 +8,11 @@ import torch.nn as nn
 from torch import optim
 
 from network import CharacterClassifier
-from data_processing import load_dataset, get_small_dataloader, split_dataset
+from data_processing import load_dataset, get_small_dataloader, split_dataset, get_dataloader
+import argparse
+import string
+from PIL import Image
+import glob
 
 def plot_curves(path, val=True):
     plots = {
@@ -148,7 +152,58 @@ def test():
     test_acc = get_accuracy(network, test)
     print(f'Test accuracy = {test_acc}')
 
+def evaluate(input_folder, output_folder):
+    character_order = string.digits + string.ascii_uppercase + string.ascii_lowercase
+    model_path = 'models/nc=62:F=3:M=5:lr=0.01:epoch=010.pt'
+    model = load_model(model_path)
+
+    #Sort such that _10.jpg comes after _9.jpg
+    images = sorted(glob.glob(os.path.abspath(input_folder) + "/*jpg"), key=lambda x: tuple(map(int,(x[:-4].split("_")[-1:-4:-1][::-1]))))
+    output_f = open(output_folder + "/output.txt", 'w')
+    currLine = []
+    currWord = ""
+    line = 1
+
+    for img in images:
+        img_name = os.path.splitext(os.path.basename(img))[0]
+        temp = img_name.split("_")
+        line_i, word_i, char_i = temp[-3], int(temp[-2]), temp[-1]
+        
+        img_f = Image.open(img).convert('RGB')
+        img_np = np.asarray(img_f).transpose((2,0,1))
+        img_tensor = torch.from_numpy(img_np).unsqueeze(0).float()
+
+        output = model(img_tensor)
+        output_prob = torch.softmax(output, dim=1)
+        _, indices = output_prob.max(1)
+        char = character_order[indices[0]]
+
+        if line != line_i:
+            currLine.append(currWord)
+            output_f.write(" ".join(currLine) + "\n")
+            currWord = ""
+            currLine = []
+            line = line_i
+
+        if word_i > 1 and word_i > len(currLine):
+            currLine.append(currWord)
+            currWord = char
+        else:
+            currWord += char
+    
+    #Last line
+    currLine.append(currWord)
+    output_f.write(" ".join(currLine) + "\n")
+    
+    output_f.close()
+
+parser = argparse.ArgumentParser(description='Character Bounding Box Cropping')
+parser.add_argument('--input_folder', default='../data/result/', type=str, help='folder path to input images')
+parser.add_argument('--output_folder', default='../data/text/', type=str, help='folder path to results')
+args = parser.parse_args()
+
+
 if __name__ == '__main__':
     #verify_on_small_dataset()
     # main()
-    test()
+    evaluate(args.input_folder, args.output_folder)
