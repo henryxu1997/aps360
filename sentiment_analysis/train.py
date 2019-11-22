@@ -206,17 +206,36 @@ def call_with_options(char_base, three_labels, regression):
         learning_rate=0.0007, batch_size=64, val_acc_target=0.66)
     plot_curves(path)
 
+    test_accuracy(test_set, model, regression, three_labels)
+
+def test_accuracy(test_set, model, regression, three_labels):
     test_iter = create_iter(test_set, 64)
     if regression:
         test_acc = get_regression_accuracy(model, test_iter, three_labels)
     else:
         test_acc = get_accuracy(model, test_iter)
-    print('Test accuracy', test_acc)
+    print('Test accuracy:', test_acc)
+
+def saved_model_test_accuracy(saved_model_file):
+    _, _, test_set, vocab = load_sst_dataset(
+        char_base=char_base, three_labels=three_labels, regression=regression)
+
+    model = WordSANet(vocab.vectors, layer_type='lstm',
+        output_size=3,regression=False, hidden_size=108,
+        num_layers=1, dropout=0.0)
+    model.load_state_dict(torch.load(saved_model_file))
+    model.eval()
+
+    test_accuracy(test_set, model, False, True)
 
 if __name__ == '__main__':
     # manual_run('the movie was phenomenal')
-    #main()
+    # main()
+
     char_base = False
     three_labels = True
     regression = False
     call_with_options(char_base=char_base, three_labels=three_labels, regression=regression)
+
+    # saved_model_file = './saved_66.9p_epoch10/saved_models/WordSANet:16531:200:lstm:108:1:0.0:lr=0.0007:wd=0.0:b=64epoch=10.pt'
+    # saved_model_test_accuracy(saved_model_file)
