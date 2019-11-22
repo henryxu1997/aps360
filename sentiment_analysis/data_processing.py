@@ -4,7 +4,7 @@ import os
 import torch
 import torchtext
 
-EMBEDDING_SIZE = 50
+EMBEDDING_SIZE = 200
 glove = torchtext.vocab.GloVe(name="6B", dim=EMBEDDING_SIZE)
 
 def split_text(text):
@@ -37,20 +37,34 @@ def _analyze_data(dataset):
             wanted += 1
             print('Example:', example.text, '\nLabel:', example.label)
     print('Label counts:', sorted(counts.items()))
-    
-def load_sst_dataset(root='.data', analyze_data=False):
+
+
+def load_sst_dataset(root='.data', analyze_data=False, char_base = False, three_labels = False, regression = False):
     """Loads train, validation, test dataset from SST raw data."""
 
     def get_label_value(label):
         return int(label)
+    def get_three_label(label):
+        int_label = int(label)
+        if int_label <2:
+            return 0
+        if int_label >2:
+            return 2
+        return 1
+    def split_char(x):
+        return x
+
+    train_token = split_char if char_base else split_text
+    label_type = torch.float if regression else torch.long
+    label_func = get_three_label if three_labels else get_label_value
 
     # Define text and label fields
     text_field = torchtext.data.Field(
-        sequential=True, batch_first=True, include_lengths=True)
+        sequential=True,tokenize = train_token, batch_first=True, include_lengths=True)
     label_field = torchtext.data.Field(
         sequential=False, batch_first=True, use_vocab=False,
-        dtype=torch.long,
-        preprocessing=torchtext.data.Pipeline(get_label_value))
+        dtype=label_type,
+        preprocessing=torchtext.data.Pipeline(label_func))
 
     fields = [('text', text_field), ('label', label_field)]
 
@@ -76,7 +90,11 @@ def load_sst_dataset(root='.data', analyze_data=False):
     valid_data = torchtext.data.Dataset(valid_examples, fields)
     test_data = torchtext.data.Dataset(test_examples, fields)
 
-    text_field.build_vocab(train_data, vectors=glove)
+
+    if char_base:
+        text_field.build_vocab(train_data)
+    else:
+        text_field.build_vocab(train_data, vectors=glove)
 
     return train_data, valid_data, test_data, text_field.vocab
 
