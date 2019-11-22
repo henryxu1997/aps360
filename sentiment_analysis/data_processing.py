@@ -1,21 +1,34 @@
 from collections import defaultdict
 import os
-
+import re
 import torch
 import torchtext
 
-EMBEDDING_SIZE = 50
+EMBEDDING_SIZE = 300
 glove = torchtext.vocab.GloVe(name="6B", dim=EMBEDDING_SIZE)
 
 def split_text(text):
     # Utility method to separate punctuation, split and convert words to lower case.
-    text = text.replace(".", " . ") \
-                .replace(",", " , ") \
-                .replace(";", " ; ") \
-                .replace("?", " ? ") \
-                .replace("!", " ! ")
-    return text.lower().split()
+    # text = text.replace(".", " . ") \
+    #             .replace(",", " , ") \
+    #             .replace(";", " ; ") \
+    #             .replace("?", " ? ") \
+    #             .replace("!", " ! ") \
+    #             .replace("-", " - ")
 
+    # return text.lower().split()
+    string = re.sub(r"\'s", " \'s", text)
+    string = re.sub(r"\'ve", " \'ve", string)
+    string = re.sub(r"n\'t", " n\'t", string)
+    string = re.sub(r"\'re", " \'re", string)
+    string = re.sub(r"\'d", " \'d", string)
+    string = re.sub(r"\'ll", " \'ll", string)
+    string = re.sub(r",", " , ", string)
+    string = re.sub(r"!", " ! ", string)
+    string = re.sub(r"\(", " ( ", string)
+    string = re.sub(r"\)", " ) ", string)
+    string = re.sub(r"\?", " ? ", string)
+    return string.lower().split()
 '''
 def convert_words_to_embeddings(words):
     """
@@ -82,6 +95,32 @@ def load_sst_dataset(root='.data', analyze_data=False, char_base = False, three_
         valid_examples = [torchtext.data.Example.fromtree(line, fields) for line in f]
     with open(os.path.expanduser(test_path)) as f:
         test_examples = [torchtext.data.Example.fromtree(line, fields) for line in f]
+
+    if three_labels:
+        neutral = []
+        for t_e in train_examples:
+            if t_e.label == 1:
+                neutral.append(t_e)
+        train_examples += (neutral)
+
+        # neutral = []
+        # for t_e in train_examples:
+        #     if t_e.label != 1:
+        #         neutral.append(t_e)
+        # train_examples = neutral
+
+
+        # neutral = []
+        # for v_e in valid_examples:
+        #     if v_e.label != 1:
+        #         neutral.append(v_e)
+        # valid_examples = neutral
+
+        # neutral = []
+        # for test_e in test_examples:
+        #     if test_e.label != 1:
+        #         neutral.append(test_e)
+        # test_examples = neutral
 
     if analyze_data:
         _analyze_data(train_examples)

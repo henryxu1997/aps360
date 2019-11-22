@@ -7,47 +7,71 @@ import torch
 import torch.nn as nn
 
 from data_processing import load_sst_dataset, create_iter, split_text
-from network import WordSANet, CharSANet
+from network import WordSANet, CharSANet, test_ann
 
-def get_regression_accuracy(model, data_iter, three_labels):
+def get_regression_accuracy(model, data_iter, three_labels, examine_failure = False):
     correct, total = 0, 0
+    fail = [0,0,0]
     for batch in data_iter:
         outputs = model(batch.text[0])
-
         for (output,label) in zip(outputs,batch.label):
             if three_labels:
-                if output < 0.5 and label == 0:
-                    correct+=1
-                elif output < 1.5 and label == 1:
-                    correct+=1
-                elif output>=1.5 and label == 2:
-                    correct+=1
+                if output < 5:
+                    if label == 0:
+                        correct+=1
+                    else:
+                        fail[0] +=1
+                elif output < 15:
+                    if label == 1:
+                        correct+=1
+                    else:
+                        fail[1] +=1
+                elif output>= 15:
+                    if label == 2:
+                        correct+=1
+                    else:
+                        fail[2] +=1
             else:
-                if output < 0.5 and label == 0:
-                    correct+=1
-                elif output < 1.5 and label == 1:
-                    correct+=1
-                elif output < 2.5 and label == 2:
-                    correct+=1
-                elif output < 3.5 and label == 3:
-                    correct+=1
-                elif output>=3.5 and label == 4:
-                    correct+=1
+                if output < 0.5:
+                    if label == 0:
+                        correct+=1
+                elif output < 1.5: 
+                    if label == 1:
+                        correct+=1
+                elif output < 2.5:
+                    if label == 2:
+                        correct+=1
+                elif output < 3.5:
+                    if label == 3:
+                        correct+=1
+                elif output>=3.5:
+                    if label == 4:
+                        correct+=1
             total+=1
+    if examine_failure:
+        print(fail)
     return correct/total
 
 
-def get_accuracy(model, data_iter):
+def get_accuracy(model, data_iter, examine_failure = False):
     correct, total = 0, 0
+    if examine_failure:
+        fail = [0,0,0]
     for batch in data_iter:
         outputs = model(batch.text[0])
         output_prob = torch.softmax(outputs, dim=1)
         # indices in range 0-4 which is the same as batch.label
         _, indices = output_prob.max(1)
         # print(indices, batch.label)
+        if examine_failure:
+            for index,label in zip(indices,batch.label):
+                if (index != label):
+                    fail[label]+=1
         result = (indices == batch.label)
         correct += result.sum().item()
         total += len(result)
+    if examine_failure:
+        print(fail)
     return correct / total
 
 def plot_curves(path, val=True):
@@ -97,8 +121,17 @@ def train_network(model, train_set, valid_set=None,  regression = False, three_l
             outputs = model(batch.text[0])
             # Sanity check
             # assert outputs.shape == (batch_size, 5)
+            if (regression):
+                batch.label *= 10
+
+            outputs = torch.softmax(outputs, dim=1)
             loss = criterion(outputs, batch.label)
             loss.backward()
+
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
+            # for p in model.parameters():
+            #     if p.grad is not None:
+            #         p.data.add_(-learning_rate, p.grad.data)
             optimizer.step()
             optimizer.zero_grad()
             epoch_train_loss += loss.item()
@@ -123,9 +156,9 @@ def train_network(model, train_set, valid_set=None,  regression = False, three_l
 
         if valid_set:
             if regression:
-                yy = get_regression_accuracy(model, valid_iter,three_labels)
+                yy = get_regression_accuracy(model, valid_iter,three_labels, examine_failure = True)
             else:
-                yy = get_accuracy(model, valid_iter)
+                yy = get_accuracy(model, valid_iter, examine_failure = True)
             val_acc[epoch] = yy
             print(f'Epoch {epoch}; Train loss {epoch_train_loss}; Val loss {epoch_val_loss}; Train acc {xx}; Val acc {yy}')
         else:
@@ -179,7 +212,7 @@ def call_with_options(char_base, three_labels, regression):
     make_dirs_if_not_exist()
     # For reproducibility, set a random seed
     torch.manual_seed(42)
-    train_set, valid_set, test_set, vocab = load_sst_dataset(char_base = char_base, three_labels = three_labels, regression = regression)
+    train_set, valid_set, test_set, vocab = load_sst_dataset(char_base = char_base, three_labels = three_labels, regression = regression, analyze_data = True)
     
     output_size = 5
     if three_labels:
@@ -190,16 +223,19 @@ def call_with_options(char_base, three_labels, regression):
     if char_base:
         model = CharSANet(vocab, layer_type = 'rnn' ,output_size = output_size, regression = regression)
     else:
-        model = WordSANet(vocab.vectors, layer_type = 'gru',output_size = output_size,regression = regression)
+        model = WordSANet(vocab.vectors, layer_type = 'gru',output_size = output_size,regression = regression, hidden_size = 150,\
+                                         num_layers = 3, dropout = 0.4)
+        #model = test_ann(embeddings = vocab.vectors, input_size = 300, output_size = output_size)
     
     print(model)
-    path = train_network(model, train_set, valid_set, three_labels = three_labels, regression = regression, num_epochs=10)
+    path = train_network(model, train_set, valid_set, three_labels = three_labels, regression = regression, num_epochs=40,\
+                            learning_rate = 0.0007, batch_size = 64, weight_decay = 0.001)
     plot_curves(path)
 
 if __name__ == '__main__':
     # manual_run('the movie was phenomenal')
     #main()
-    char_base = True
+    char_base = False
     three_labels = True
     regression = False
     call_with_options(char_base = char_base,three_labels = three_labels, regression = regression)
