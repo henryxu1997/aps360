@@ -1,4 +1,3 @@
-
 import os
 
 import matplotlib.pyplot as plt
@@ -43,7 +42,8 @@ def get_accuracy(model, data_iter):
     for batch in data_iter:
         outputs = model(batch.text[0])
         output_prob = torch.softmax(outputs, dim=1)
-        # indices in range 0-4 which is the same as batch.label
+        # indices in range 0-4 (5 classes) or 0-2 (3 classes) which is the
+        # same as batch.label
         _, indices = output_prob.max(1)
         # print(indices, batch.label)
         result = (indices == batch.label)
@@ -202,9 +202,16 @@ def call_with_options(char_base, three_labels, regression):
     
     print(model)
     path = train_network(model, train_set, valid_set,
-        three_labels=three_labels, regression=regression, num_epochs=15,
+        three_labels=three_labels, regression=regression, num_epochs=30,
         learning_rate=0.0007, batch_size=64, val_acc_target=0.66)
     plot_curves(path)
+
+    test_iter = create_iter(test_set, 64)
+    if regression:
+        test_acc = get_regression_accuracy(model, test_iter, three_labels)
+    else:
+        test_acc = get_accuracy(model, test_iter)
+    print('Test accuracy', test_acc)
 
 if __name__ == '__main__':
     # manual_run('the movie was phenomenal')
