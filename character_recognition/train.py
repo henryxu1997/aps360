@@ -152,9 +152,8 @@ def test():
     test_acc = get_accuracy(network, test)
     print(f'Test accuracy = {test_acc}')
 
-def evaluate(input_folder, output_folder):
+def evaluate(input_folder, output_folder, model_path):
     character_order = string.digits + string.ascii_uppercase + string.ascii_lowercase
-    model_path = 'models/nc=62:F=3:M=5:lr=0.01:epoch=010.pt'
     model = load_model(model_path)
 
     #Sort such that _10.jpg comes after _9.jpg
@@ -200,10 +199,12 @@ def evaluate(input_folder, output_folder):
 parser = argparse.ArgumentParser(description='Character Bounding Box Cropping')
 parser.add_argument('--input_folder', default='../data/result/', type=str, help='folder path to input images')
 parser.add_argument('--output_folder', default='../data/text/', type=str, help='folder path to results')
+parser.add_argument('--model', default='models/nc=62:F=3:M=5:lr=0.01:epoch=010.pt', type=str, help='model weights')
+
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
     #verify_on_small_dataset()
     # main()
-    evaluate(args.input_folder, args.output_folder)
+    evaluate(args.input_folder, args.output_folder, args.model)
