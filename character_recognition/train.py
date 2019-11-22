@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch import optim
 
 from network import CharacterClassifier
-from data_processing import load_dataset, get_small_dataloader, split_dataset, get_dataloader
+from data_processing import load_dataset, get_small_dataloader, split_dataset
 import argparse
 import string
 from PIL import Image
