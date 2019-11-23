@@ -57,42 +57,38 @@ def generate_ssml(text, sentiment):
     # attributes = 'rate="120%" pitch="-3st"'
     return f'<speak><prosody {attributes}>{text}</prosody></speak>'
 
-def synthesize_speech(text_list, sentiment_list, lang='en-GB', gender='f', voice_type='Wavenet', outputPath='output'):
+def synthesize_speech(text, sentiment, lang='en-GB', gender='f', voice_type='Wavenet', outfile='output'):
     """
     text: str           The text to be spoken.
     sentiment: float    A float between 0 and 1 indicating how negative or positive the text is.
     """
     client = tts.TextToSpeechClient()
 
-    audio_data += b''
-    for i in range(len(text_list)):
-        ssml = generate_ssml(text_list[i], sentiment_list[i])
-        input_text = tts.types.SynthesisInput(ssml=ssml)
+    ssml = generate_ssml(text, sentiment)
+    input_text = tts.types.SynthesisInput(ssml=ssml)
 
-        # Note: the voice can also be specified by name.
-        # Names of voices can be retrieved with client.list_voices().
-        # for voice in client.list_voices().voices:
-        #     if voice.language_codes[0].startswith('en'):
-        #         print(voice)
-    
-        voice_name = generate_voice_name(lang, gender, voice_type)
-        voice = tts.types.VoiceSelectionParams(language_code=lang, name=voice_name)
+    # Note: the voice can also be specified by name.
+    # Names of voices can be retrieved with client.list_voices().
+    # for voice in client.list_voices().voices:
+    #     if voice.language_codes[0].startswith('en'):
+    #         print(voice)
+ 
+    voice_name = generate_voice_name(lang, gender, voice_type)
+    voice = tts.types.VoiceSelectionParams(language_code=lang, name=voice_name)
 
-        audio_config = tts.types.AudioConfig(audio_encoding=tts.enums.AudioEncoding.MP3)
-        # Synthesize speech and write to output file.
-        response = client.synthesize_speech(input_text, voice, audio_config)
-        audio_data += response.audio_content
-
+    audio_config = tts.types.AudioConfig(audio_encoding=tts.enums.AudioEncoding.MP3)
+    # Synthesize speech and write to output file.
+    response = client.synthesize_speech(input_text, voice, audio_config)
     # The response's audio_content is binary.
-    with open(f'{outputPath}.mp3', 'wb') as mp3:
-        mp3.write(audio_data)
-    with open(f'{outputPath}.txt', 'w') as metadata:
-        s = f'Text: {str(text_list)}\nSentiment: {str(sentiment_list)}\nSSML: {ssml}\nVoice name: {voice_name}'
+    with open(f'outputs/{outfile}.mp3', 'wb') as mp3:
+        mp3.write(response.audio_content)
+    with open(f'outputs/{outfile}.txt', 'w') as metadata:
+        s = f'Text: {text}\nSentiment: {str(sentiment)}\nSSML: {ssml}\nVoice name: {voice_name}'
         metadata.write(s)
-    print(f'Data saved to {outputPath}')
+    print(f'Data saved to outputs/{outfile}')
 
 if __name__ == '__main__':
     # export GOOGLE_APPLICATION_CREDENTIALS=~/.google_cloud_auth.json
     now = str(datetime.datetime.today().strftime('%Y-%m-%d-%H-%M-%S'))
     for i, sentiment in enumerate([0, 1, 2]):
-        synthesize_speech("Don't be angry, uncle. Come! Dine with us to-morrow.", sentiment, outputPath=str(i))
+        synthesize_speech("Don't be angry, uncle. Come! Dine with us to-morrow.", sentiment, outfile=str(i))
