@@ -27,6 +27,7 @@ def get_sentiment(texts):
     for sentence in texts:
         sentence_words = split_text(sentence)
         if len(sentence_words) < 1:
+            sentiments.append(1)
             continue
         word_tensor = torch.zeros(len(sentence_words), dtype=int)
         for i, word in enumerate(sentence_words):
