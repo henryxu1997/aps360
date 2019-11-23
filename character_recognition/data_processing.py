@@ -9,11 +9,14 @@ from torch.utils.data import SubsetRandomSampler, DataLoader
 from torchvision import transforms, datasets
 
 
-def generate_dataset_indices(full_dataset):
+def generate_dataset_indices(full_dataset, num_examples_per_class):
     """
     This method evenly divides up each individual class into training, validation
-    and test indices (60/20/20) split.
+    and test indices (70/15/15) split.
     Full dataset is ordered already by class which is why this works nicely.
+    
+    full_dataset: torch.utils.data.Dataset
+    num_examples_per_class: the number of examples per class. This was implemented to speed up training.
     """
     train, val, test = [], [], []
     index_start = 0
@@ -31,8 +34,10 @@ def generate_dataset_indices(full_dataset):
         # Add the indices from the old class to train, val, test accordingly
         if target != curr_target:
             indices = [idx for idx in range(index_start, i) if idx not in error_indices]
-            # Train, val, test split 0.6, 0.2, 0.2
-            train_len, val_len = int(len(indices) * 0.6), int(len(indices) * 0.2)
+            # Limit the number of examples in the class
+            indices = indices[:num_examples_per_class]
+            # Train, val, test split 0.7, 0.15, 0.15
+            train_len, val_len = int(len(indices) * 0.7), int(len(indices) * 0.15)
             train.extend(indices[:train_len])
             val.extend(indices[train_len:train_len+val_len])
             test.extend(indices[train_len+val_len:])
@@ -49,8 +54,9 @@ def load_dataset():
     full_dataset = datasets.ImageFolder(root='data', transform=transform)
     return full_dataset
     
-def split_dataset(full_dataset, batch_size=64):
-    train_indices, val_indices, test_indices = generate_dataset_indices(full_dataset)
+def split_dataset(full_dataset, num_examples_per_class=300, batch_size=64):
+    """Splits the full dataset into train, validation, and test DataLoaders."""
+    train_indices, val_indices, test_indices = generate_dataset_indices(full_dataset, num_examples_per_class)
     print('Total # of data=', len(full_dataset))
     print('Train, val, test data lengths = ', len(train_indices), len(val_indices), len(test_indices))
     train_loader = DataLoader(full_dataset, batch_size=batch_size, sampler=SubsetRandomSampler(train_indices))
