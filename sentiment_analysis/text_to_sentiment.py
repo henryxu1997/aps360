@@ -1,9 +1,13 @@
+import os
+
 import torch
 
 from data_processing import load_sst_dataset, split_text
 from network import WordSANet
 
-saved_model_file = './saved_66.9p_epoch10/saved_models/WordSANet:16531:200:lstm:108:1:0.0:lr=0.0007:wd=0.0:b=64epoch=10.pt'
+dir_path = os.path.dirname(os.path.realpath(__file__))
+saved_model_filename = './saved_66.9p_epoch10/saved_models/WordSANet:16531:200:lstm:108:1:0.0:lr=0.0007:wd=0.0:b=64epoch=10.pt'
+saved_model_path = os.path.join(dir_path, saved_model_filename)
 
 def get_sentiment(texts):
     """
@@ -16,17 +20,18 @@ def get_sentiment(texts):
     model = WordSANet(vocab.vectors, layer_type='lstm',
         output_size=3,regression=False, hidden_size=108,
         num_layers=1, dropout=0.0)
-    model.load_state_dict(torch.load(saved_model_file))
+    model.load_state_dict(torch.load(saved_model_path))
     model.eval()
 
     sentiments = []
     for sentence in texts:
         sentence_words = split_text(sentence)
+        if len(sentence_words) < 1:
+            continue
         word_tensor = torch.zeros(len(sentence_words), dtype=int)
         for i, word in enumerate(sentence_words):
             index = vocab.stoi[word]
             word_tensor[i] = index
-
         out = model(word_tensor.unsqueeze(0))
         print(out)
         output_prob = torch.softmax(out, dim=1)
