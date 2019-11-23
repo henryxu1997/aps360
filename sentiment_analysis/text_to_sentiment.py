@@ -1,15 +1,16 @@
 import torch
-
 from data_processing import load_sst_dataset, split_text
 from network import WordSANet
 
-saved_model_file = './saved_66.9p_epoch10/saved_models/WordSANet:16531:200:lstm:108:1:0.0:lr=0.0007:wd=0.0:b=64epoch=10.pt'
 
-def get_sentiment(texts):
+def get_sentiment(texts, modelPath):
     """
     Given list of strings, returns list of sentiments.
     negative = 0, neutral = 1, positive = 2
     """
+
+    saved_model_file = modelPath + '/./saved_66.9p_epoch10/saved_models/WordSANet:16531:200:lstm:108:1:0.0:lr=0.0007:wd=0.0:b=64epoch=10.pt'
+
     _, _, _, vocab = load_sst_dataset(
         char_base=False, three_labels=True, regression=False)
 

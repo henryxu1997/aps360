@@ -7,7 +7,7 @@ import sys
 def main():
     if sys.argv[1]:
         text_list = open(sys.argv[1], 'r').readlines()
-        sentiment_list = get_sentiment(text_list)
+        sentiment_list = get_sentiment(text_list, "./sentiment_analysis/")
         synthesize_speech(text_list, sentiment_list, outputPath=sys.argv[2])
         play(AudioSegment.from_mp3(sys.argv[2]+".mp3"))
     else:

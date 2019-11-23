@@ -411,7 +411,7 @@ def parseFile(srcImgPath, outputDir, output_letter_size):
 
     #-------------Letter Segmentation-------------#
 
-    cv2.waitKey(0)
+    # cv2.waitKey(0)
     print("....... Saving letters of" , src_basename, ".........")
     for i in range(no_of_lines):
         letter_seg(lines_img, x_lines, i, outputDir, src_basename, output_letter_size)   
