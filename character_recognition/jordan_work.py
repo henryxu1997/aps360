@@ -11,7 +11,17 @@ from PIL import ImageDraw
 from train import load_model
 from network import ALPHABET
 
-FILE_PATH = '/Users/Jordan/Desktop/hp_pg1.jpg'
+# Load model globally
+transform = transforms.Compose(
+    [transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+)
+model_path = 'models/nc=62:F=3:M=5:lr=0.01:epoch=010.pt'
+network = load_model(model_path)
+
+
+FILE_PATH = './jordan_work/hp_pg16.jpg'
+
 def image_char_extraction(file_path=FILE_PATH):
     target = pytesseract.image_to_string(file_path)
     print(target)
@@ -20,7 +30,7 @@ def image_char_extraction(file_path=FILE_PATH):
 
     output_text = []
     correct, total = 0, 0
-    with Image.open(file_path) as img:
+    with Image.open(file_path).convert('RGB') as img:
         # Convert to monochrome
         # img = img.convert('L')
         print(img.size)
@@ -39,9 +49,11 @@ def image_char_extraction(file_path=FILE_PATH):
             '''
             bbox = [int(i) for i in tokens[1:-1]]
             # print('OLD BBOX', bbox)
+            # Enlarge the box a bit so it's not super tight around character
             bbox[0] -= 7
             bbox[2] += 7
             tmp = bbox[1]
+            # Reverse the y coordinates
             bbox[1] = (height - bbox[3]) - 7
             bbox[3] = (height - tmp) + 7
             # print('NEW', bbox)
@@ -63,12 +75,8 @@ def image_char_extraction(file_path=FILE_PATH):
                 total += 1
             else:
                 output_text.append(char)
-                # if target_i % 20 == 0:
-                #     print(char, predicted_letter)
-                #     cropped_img.show()
-            # if target_i >= 10:
-            #     break
 
+            # Advance a character and skip any whitespace
             target_i += 1
             while target_i < len(target) and target[target_i] in string.whitespace:
                 target_i += 1
@@ -85,27 +93,22 @@ def get_letter(outputs):
     _, indices = output_prob.max(1)
     return ALPHABET[indices]
 
-def test_network_on_screenshot_letters():
-    for path in os.listdir('jordan_work'):
-        print(path)
-        with Image.open(f'jordan_work/{path}').convert('RGB') as img:
+def test_network_on_screenshot_letters(folder='jordan_work/pg16'):
+    for path in sorted(os.listdir(folder)):
+        if not path.endswith('png'):
+            continue
+        with Image.open(f'{folder}/{path}').convert('RGB') as img:
             print(run_img_predict_char(img))
 
-transform = transforms.Compose(
-    [transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-)
-model_path = 'models/nc=62:F=3:M=5:lr=0.01:epoch=010.pt'
-network = load_model(model_path)
-
 def run_img_predict_char(img, show_img=False):
-
-
+    img = img.resize((128,128))
     if show_img:
         print(img.size)
         img.show()
-    tensor_img = transform(img.resize((128,128))).unsqueeze(0)
+    tensor_img = transform(img).unsqueeze(0)
     out = network(tensor_img)
     return get_letter(out)
 
-image_char_extraction()
+if __name__ == '__main__':
+    # image_char_extraction()
+    test_network_on_screenshot_letters()
