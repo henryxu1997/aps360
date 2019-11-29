@@ -184,7 +184,7 @@ def evaluate(input_folder, output_folder, model_path):
             currLine = []
             line = line_i
 
-        if word_i > 1 and word_i > len(currLine):
+        if word_i > 1 and char_i == '1':
             currLine.append(currWord)
             currWord = char
         else:
@@ -201,10 +201,11 @@ parser.add_argument('--input_folder', default='../data/result/', type=str, help=
 parser.add_argument('--output_folder', default='../data/text/', type=str, help='folder path to results')
 parser.add_argument('--model', default='models/nc=62:F=3:M=5:lr=0.01:epoch=010.pt', type=str, help='model weights')
 
-args = parser.parse_args()
 
 
 if __name__ == '__main__':
     #verify_on_small_dataset()
     # main()
+
+    args = parser.parse_args()
     evaluate(args.input_folder, args.output_folder, args.model)
