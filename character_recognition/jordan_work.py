@@ -1,5 +1,6 @@
 import os
 import string
+import sys
 
 import torch
 from torchvision import transforms, datasets
@@ -109,7 +110,7 @@ def test_network_on_screenshot_letters(folder='jordan_work/pg16'):
     i = 0
     correct, total = 0, 0
     for path in sorted(os.listdir(folder), key=lambda item: (len(item), item)):
-        if not path.endswith('png'):
+        if not path.endswith('png') and not path.endswith('jpg'):
             continue
         try:
             tokens = path.split('-')
@@ -140,4 +141,10 @@ def run_img_predict_char(img, show_img=False):
 
 if __name__ == '__main__':
     # image_char_extraction()
-    test_network_on_screenshot_letters()
+    # test_network_on_screenshot_letters()
+    
+    if len(sys.argv) > 1:
+        folder = sys.argv[1]
+        test_network_on_screenshot_letters(folder)
+    else:
+        test_network_on_screenshot_letters()

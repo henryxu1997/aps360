@@ -1,0 +1,1 @@
+Commentary The industry standard resolution for printing four-color half-tones is 300ppi.
