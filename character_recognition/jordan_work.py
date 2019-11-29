@@ -66,11 +66,13 @@ def image_char_extraction(file_path=FILE_PATH):
             # (0,0) in the upper left corner. Note that the coordinates refer to the implied 
             # pixel corners; the centre of a pixel addressed as (0, 0) actually lies at (0.5, 0.5).
             cropped_img = img.crop(bbox)
-            new_size = (200, 200)
-            new_img = Image.new('RGB', (800,1280), (255, 255, 255))
-            new_img.paste(cropped_img, (int((new_size[0]-width)/2), int((new_size[1]-height)/2)))
-            new_img.show()
-            return
+            # old_size = cropped_img.size
+            # new_size = (128, 128)
+            # new_im = Image.new("RGB", new_size, color='white')   ## luckily, this is already black!
+            # new_im.paste(cropped_img, [int(i) for i in ((new_size[0]-old_size[0])/2, (new_size[1]-old_size[1])/2)])
+
+            # new_im.show()
+            # return
             
             if char in ALPHABET:
                 predicted_letter = run_img_predict_char(cropped_img)
@@ -100,16 +102,32 @@ def get_letter(outputs):
 
 def test_network_on_screenshot_letters(folder='jordan_work/pg16'):
     last_token = 0
+    print('# character images = ', len(os.listdir(folder)))
+    ans_text = open(os.path.join(folder, 'ans.txt')).read()
+    ans_text = ''.join(ans_text.split())
+    print(ans_text)
+    i = 0
+    correct, total = 0, 0
     for path in sorted(os.listdir(folder), key=lambda item: (len(item), item)):
         if not path.endswith('png'):
             continue
-        tokens = path.split('-')
-        if int(tokens[0]) != last_token:
-            last_token = int(tokens[0])
-            print(' ')
+        try:
+            tokens = path.split('-')
+            if int(tokens[0]) != last_token:
+                last_token = int(tokens[0])
+                print(' ')
+        except Exception as e:
+            pass
         with Image.open(f'{folder}/{path}').convert('RGB') as img:
-            print(run_img_predict_char(img), end='')
+            predicted_char = run_img_predict_char(img)
+            print(predicted_char, end='')
+            if predicted_char.lower() == ans_text[i].lower():
+                correct += 1
+            i += 1
+            total += 1
+
     print(' DONE')
+    print(correct/total)
 
 def run_img_predict_char(img, show_img=False):
     img = img.resize((128,128))
