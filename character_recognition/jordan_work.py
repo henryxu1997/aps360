@@ -66,6 +66,11 @@ def image_char_extraction(file_path=FILE_PATH):
             # (0,0) in the upper left corner. Note that the coordinates refer to the implied 
             # pixel corners; the centre of a pixel addressed as (0, 0) actually lies at (0.5, 0.5).
             cropped_img = img.crop(bbox)
+            new_size = (200, 200)
+            new_img = Image.new('RGB', (800,1280), (255, 255, 255))
+            new_img.paste(cropped_img, (int((new_size[0]-width)/2), int((new_size[1]-height)/2)))
+            new_img.show()
+            return
             
             if char in ALPHABET:
                 predicted_letter = run_img_predict_char(cropped_img)
@@ -94,11 +99,17 @@ def get_letter(outputs):
     return ALPHABET[indices]
 
 def test_network_on_screenshot_letters(folder='jordan_work/pg16'):
-    for path in sorted(os.listdir(folder)):
+    last_token = 0
+    for path in sorted(os.listdir(folder), key=lambda item: (len(item), item)):
         if not path.endswith('png'):
             continue
+        tokens = path.split('-')
+        if int(tokens[0]) != last_token:
+            last_token = int(tokens[0])
+            print(' ')
         with Image.open(f'{folder}/{path}').convert('RGB') as img:
-            print(run_img_predict_char(img))
+            print(run_img_predict_char(img), end='')
+    print(' DONE')
 
 def run_img_predict_char(img, show_img=False):
     img = img.resize((128,128))
