@@ -4,13 +4,14 @@ import torch
 from data_processing import load_sst_dataset, split_text
 from network import WordSANet
 
-def get_sentiment(texts, modelPath):
+def get_sentiment(texts, dir_path):
     """
     Given list of strings, returns list of sentiments.
     negative = 0, neutral = 1, positive = 2
     """
 
-    saved_model_file = modelPath + '/./saved_66.9p_epoch10/saved_models/WordSANet:16531:200:lstm:108:1:0.0:lr=0.0007:wd=0.0:b=64epoch=10.pt'
+    saved_model_filename = 'saved_66.9p_epoch10/saved_models/WordSANet:16531:200:lstm:108:1:0.0:lr=0.0007:wd=0.0:b=64epoch=10.pt'
+    saved_model_path = os.path.join(dir_path, saved_model_filename)
 
     _, _, _, vocab = load_sst_dataset(
         char_base=False, three_labels=True, regression=False)
@@ -41,8 +42,11 @@ def get_sentiment(texts, modelPath):
     return sentiments
 
 if __name__ == '__main__':
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     texts = [
+        'Ivan is good', # positive
+        'Ivan is definitely not good', # positive
         'Ivan is the coolest most awesome person in the world!', # positive
         'Ivan is okay, but not the greatest.', # neutral
         'Ivan is absolutely terrible and I abhor him.'] # negative
-    print(get_sentiment(texts))
+    print(get_sentiment(texts, dir_path))
