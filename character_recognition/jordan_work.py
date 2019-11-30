@@ -21,7 +21,7 @@ model_path = 'models/nc=62:F=3:M=5:lr=0.01:epoch=010.pt'
 network = load_model(model_path)
 
 
-FILE_PATH = './jordan_work/hp_pg16.jpg'
+FILE_PATH = './harry_potter/hp_pg16.jpg'
 
 def image_char_extraction(file_path=FILE_PATH):
     target = pytesseract.image_to_string(file_path)
@@ -51,12 +51,12 @@ def image_char_extraction(file_path=FILE_PATH):
             bbox = [int(i) for i in tokens[1:-1]]
             # print('OLD BBOX', bbox)
             # Enlarge the box a bit so it's not super tight around character
-            bbox[0] -= 7
-            bbox[2] += 7
+            # bbox[0] -= 7
+            # bbox[2] += 7
             tmp = bbox[1]
             # Reverse the y coordinates
-            bbox[1] = (height - bbox[3]) - 7
-            bbox[3] = (height - tmp) + 7
+            bbox[1] = (height - bbox[3])# - 7
+            bbox[3] = (height - tmp)# + 7
             # print('NEW', bbox)
 
             # draw = ImageDraw.Draw(img)
@@ -67,6 +67,12 @@ def image_char_extraction(file_path=FILE_PATH):
             # (0,0) in the upper left corner. Note that the coordinates refer to the implied 
             # pixel corners; the centre of a pixel addressed as (0, 0) actually lies at (0.5, 0.5).
             cropped_img = img.crop(bbox)
+            if target_i >= 20:
+                cropped_img.show()
+                cropped_img.save(f'pytesseract_extract_{target_i}{char}.png')
+            if target_i >= 40:
+                return
+            # return
             # old_size = cropped_img.size
             # new_size = (128, 128)
             # new_im = Image.new("RGB", new_size, color='white')   ## luckily, this is already black!
@@ -100,6 +106,35 @@ def get_letter(outputs):
     # print(output_prob)
     _, indices = output_prob.max(1)
     return ALPHABET[indices]
+
+def assemble_output(folder):
+    ans_text = open(os.path.join(folder, 'ans_with_punctuation.txt')).read()
+    chars_path = os.path.join(folder, 'chars')
+    # Files are sorted in order of character appearance.
+    i = 0
+    character_files = sorted(os.listdir(chars_path), key=lambda item: (len(item), item))
+    output = []
+    correct, total = 0, 0
+    for char in ans_text:
+        if char not in ALPHABET:
+            output.append(char)
+            continue
+        if i >= len(character_files):
+            print(f'Warning: Skipping {i}')
+            continue
+        filename = character_files[i]
+        if not filename.endswith('png'):
+            raise ValueError(f'invalid filename {filename}')
+        with Image.open(os.path.join(chars_path, filename)).convert('RGB') as img:
+            predicted_char = run_img_predict_char(img)
+            # print(predicted_char, end='')
+            i += 1
+            if predicted_char.lower() == char:
+                correct += 1
+            total += 1 
+            output.append(predicted_char)
+    print('Accuracy', correct/total)
+    return ''.join(output)
 
 def test_network_on_screenshot_letters(folder='jordan_work/pg16'):
     last_token = 0
@@ -140,11 +175,9 @@ def run_img_predict_char(img, show_img=False):
     return get_letter(out)
 
 if __name__ == '__main__':
-    # image_char_extraction()
-    # test_network_on_screenshot_letters()
-    
-    if len(sys.argv) > 1:
-        folder = sys.argv[1]
-        test_network_on_screenshot_letters(folder)
-    else:
-        test_network_on_screenshot_letters()
+    if len(sys.argv) <= 1:
+        raise ValueError('Must specify folder with character images')
+    folder = sys.argv[1]
+    ocr_output = assemble_output(folder)
+    with open(f'demo_outputs/ocr_{folder}_output.txt', 'w+') as f:
+        f.write(ocr_output)
