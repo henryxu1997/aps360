@@ -44,9 +44,15 @@ def get_sentiment(texts, dir_path):
 if __name__ == '__main__':
     dir_path = os.path.dirname(os.path.realpath(__file__))
     texts = [
+        'Boys are good',
+        'Girls are good',
+        'Boys are bad',
+        'Girls are bad',
         'Ivan is good', # positive
         'Ivan is definitely not good', # positive
+        'Ivan is definitely not bad', # positive
         'Ivan is the coolest most awesome person in the world!', # positive
         'Ivan is okay, but not the greatest.', # neutral
         'Ivan is absolutely terrible and I abhor him.'] # negative
+    print(texts)
     print(get_sentiment(texts, dir_path))
