@@ -1,0 +1,4 @@
+Text: Famous fOr SOmeLhinK he wOn’t even temembet
+Sentiment: 1
+SSML: <speak><prosody >Famous fOr SOmeLhinK he wOn’t even temembet</prosody></speak>
+Voice name: en-GB-Wavenet-A

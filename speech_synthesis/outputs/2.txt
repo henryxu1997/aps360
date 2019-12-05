@@ -1,0 +1,4 @@
+Text: Don't be angry, uncle. Come! Dine with us to-morrow.
+Sentiment: 2
+SSML: <speak><prosody rate="120%" volume="loud" pitch="+3st">Don't be angry, uncle. Come! Dine with us to-morrow.</prosody></speak>
+Voice name: en-GB-Wavenet-A

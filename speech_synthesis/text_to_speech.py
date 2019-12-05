@@ -63,9 +63,11 @@ def synthesize_speech(text, sentiment, lang='en-GB', gender='f', voice_type='Wav
     sentiment: float    A float between 0 and 1 indicating how negative or positive the text is.
     """
     client = tts.TextToSpeechClient()
-
-    ssml = generate_ssml(text, sentiment)
-    input_text = tts.types.SynthesisInput(ssml=ssml)
+    audio_data = b''
+    
+    for i in range(len(text_list)):
+        ssml = generate_ssml(text_list[i], sentiment_list[i])
+        input_text = tts.types.SynthesisInput(ssml=ssml)
 
     # Note: the voice can also be specified by name.
     # Names of voices can be retrieved with client.list_voices().
