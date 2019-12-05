@@ -1,0 +1,4 @@
+Text: ‘iU wOutd be enOugK tO turn any boy’s nead
+Sentiment: 0
+SSML: <speak><prosody rate="120%" volume="x-loud" pitch="-6st">‘iU wOutd be enOugK tO turn any boy’s nead</prosody></speak>
+Voice name: en-GB-Wavenet-A

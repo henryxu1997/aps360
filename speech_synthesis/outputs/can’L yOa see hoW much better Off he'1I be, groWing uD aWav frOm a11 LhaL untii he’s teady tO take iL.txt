@@ -1,0 +1,4 @@
+Text: can’L yOa see hoW much better Off he'1I be, groWing uD aWav frOm a11 LhaL untii he’s teady tO take iL
+Sentiment: 0
+SSML: <speak><prosody rate="120%" volume="x-loud" pitch="-6st">can’L yOa see hoW much better Off he'1I be, groWing uD aWav frOm a11 LhaL untii he’s teady tO take iL</prosody></speak>
+Voice name: en-GB-Wavenet-A

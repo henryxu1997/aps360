@@ -1,0 +1,4 @@
+Text: FamouS before he can Watk and talk
+Sentiment: 2
+SSML: <speak><prosody rate="120%" volume="loud" pitch="+3st">FamouS before he can Watk and talk</prosody></speak>
+Voice name: en-GB-Wavenet-A

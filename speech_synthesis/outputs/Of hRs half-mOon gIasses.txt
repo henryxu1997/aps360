@@ -1,0 +1,4 @@
+Text: Of hRs half-mOon gIasses
+Sentiment: 1
+SSML: <speak><prosody >Of hRs half-mOon gIasses</prosody></speak>
+Voice name: en-GB-Wavenet-A
