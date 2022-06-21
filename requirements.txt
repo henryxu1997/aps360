@@ -19,5 +19,5 @@ opencv-python==4.1.1.26
 scikit-image==0.14.2
 
 # Character Recognition
-numPy==1.15.4
+numPy==1.22.0
 keras==2.2.4
